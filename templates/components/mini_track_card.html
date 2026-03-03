@@ -1,0 +1,49 @@
+{% url 'tracks:track_detail' track.id as track_url %}
+<article class="mini-track-card">
+  <a href="{{ track_url }}" class="mini-track-cover-link">
+    <img src="{{ track.cover_url }}" alt="{{ track.title }} cover" class="mini-track-cover" />
+  </a>
+
+  <div class="mini-track-content">
+    <h3 class="mini-track-title"><a href="{{ track_url }}">{{ track.title }}</a></h3>
+    <p class="mini-track-artist muted">{{ track.artist.name }}</p>
+
+    <div class="mini-track-meta muted">
+      <span data-like-count data-track-id="{{ track.id }}">♥ {{ track.likes_count }}</span>
+      <span>▶ {{ track.plays_count }}</span>
+    </div>
+  </div>
+
+  <div class="mini-track-actions">
+    <button
+      type="button"
+      class="icon-btn icon-btn-sm js-player-play"
+      aria-label="Play {{ track.title }}"
+      data-track-id="{{ track.id }}"
+      data-title="{{ track.title }}"
+      data-artist="{{ track.artist.name }}"
+      data-cover-url="{{ track.cover_url }}"
+      data-audio-url="{{ track.audio_url }}"
+      data-source-type="{{ track.source_type }}"
+      data-track-url="{{ track_url }}"
+    >
+      ▶
+    </button>
+
+    {% if request.user.is_authenticated and show_like %}
+      <form method="post" action="{% url 'interactions:toggle_like' track.id %}" class="like-form js-like-form" data-track-id="{{ track.id }}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+        <button
+          type="submit"
+          class="icon-btn icon-btn-sm js-like-button {% if track.id in liked_track_ids %}is-liked{% endif %}"
+          aria-label="Toggle favorite"
+          aria-pressed="{% if track.id in liked_track_ids %}true{% else %}false{% endif %}"
+          data-liked="{% if track.id in liked_track_ids %}1{% else %}0{% endif %}"
+        >
+          <span class="icon-heart" aria-hidden="true">{% if track.id in liked_track_ids %}♥{% else %}♡{% endif %}</span>
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</article>

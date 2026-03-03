@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if request.LANGUAGE_CODE == 'ru' %}Настройки{% else %}Баптаулар{% endif %} | QazSound{% endblock %}
+
+{% block content %}
+<section class="settings-shell">
+  {% if request.LANGUAGE_CODE == 'ru' %}
+    {% include 'components/section_header.html' with eyebrow='Настройки' title='Настройки аккаунта' subtitle='Управление профилем, языком и информацией о платформе.' %}
+  {% else %}
+    {% include 'components/section_header.html' with eyebrow='Баптаулар' title='Аккаунт баптаулары' subtitle='Профиль, тіл және платформа туралы ақпаратты басқарыңыз.' %}
+  {% endif %}
+
+  <div class="settings-layout">
+    <section class="card panel-space settings-panel">
+      <h2>{% if request.LANGUAGE_CODE == 'ru' %}Профиль{% else %}Профиль{% endif %}</h2>
+      <form method="post" enctype="multipart/form-data" class="form-grid">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="form-error field-full">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="field">
+          <label for="{{ form.username.id_for_label }}">{% if request.LANGUAGE_CODE == 'ru' %}Логин{% else %}Логин{% endif %}</label>
+          {{ form.username }}
+          {% if form.username.errors %}<div class="field-error">{{ form.username.errors }}</div>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.display_name.id_for_label }}">{% if request.LANGUAGE_CODE == 'ru' %}Отображаемое имя{% else %}Көрінетін аты{% endif %}</label>
+          {{ form.display_name }}
+          {% if form.display_name.errors %}<div class="field-error">{{ form.display_name.errors }}</div>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.avatar.id_for_label }}">{% if request.LANGUAGE_CODE == 'ru' %}Фото профиля{% else %}Профиль фотосы{% endif %}</label>
+          {{ form.avatar }}
+          {% if form.avatar.errors %}<div class="field-error">{{ form.avatar.errors }}</div>{% endif %}
+        </div>
+
+        <div class="field">
+          <label for="{{ form.preferred_language.id_for_label }}">{% if request.LANGUAGE_CODE == 'ru' %}Язык{% else %}Тіл{% endif %}</label>
+          {{ form.preferred_language }}
+          {% if form.preferred_language.errors %}<div class="field-error">{{ form.preferred_language.errors }}</div>{% endif %}
+          <small class="muted">{% if request.LANGUAGE_CODE == 'ru' %}Выберите язык интерфейса: Казахский или Русский.{% else %}Интерфейс тілін таңдаңыз: Қазақша немесе Орысша.{% endif %}</small>
+        </div>
+
+        <div class="button-row field-full">
+          <button type="submit" class="btn btn-primary">{% if request.LANGUAGE_CODE == 'ru' %}Сохранить{% else %}Сақтау{% endif %}</button>
+          <a href="{% url 'users:profile' %}" class="btn btn-secondary">{% if request.LANGUAGE_CODE == 'ru' %}Назад в профиль{% else %}Профильге қайту{% endif %}</a>
+        </div>
+      </form>
+    </section>
+
+    <aside class="settings-side stack-sm">
+      <section class="card panel-space settings-panel">
+        <h3>{% if request.LANGUAGE_CODE == 'ru' %}О нас{% else %}Біз туралы{% endif %}</h3>
+        <p class="muted">
+          {% if request.LANGUAGE_CODE == 'ru' %}
+            QazSound — музыкальная платформа для публикации треков, безопасного YouTube embed и удобного глобального плеера.
+          {% else %}
+            QazSound — тректер жариялауға, YouTube embed-ті қауіпсіз қосуға және біртұтас global player қолдануға арналған музыкалық платформа.
+          {% endif %}
+        </p>
+      </section>
+
+      <section class="card panel-space settings-panel">
+        <h3>{% if request.LANGUAGE_CODE == 'ru' %}Помощь{% else %}Көмек{% endif %}</h3>
+        <p class="muted">
+          {% if request.LANGUAGE_CODE == 'ru' %}
+            Если заметили проблему, обновите страницу и проверьте настройки аккаунта. Для управления контентом используйте профиль и избранное.
+          {% else %}
+            Егер мәселе байқалса, бетті жаңартып, аккаунт баптауларын тексеріңіз. Контентті басқару үшін профиль және таңдаулылар бөлімін қолданыңыз.
+          {% endif %}
+        </p>
+      </section>
+    </aside>
+  </div>
+</section>
+{% endblock %}

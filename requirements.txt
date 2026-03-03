@@ -1,0 +1,5 @@
+django
+pillow
+python-dotenv
+django-jazzmin
+yt-dlp

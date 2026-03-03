@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Tracks | QazSound{% endblock %}
+
+{% block content %}
+{% include 'components/section_header.html' with eyebrow='Catalog' title='All Tracks' subtitle='Browse everything published on QazSound.' action_url='/tracks/add/' action_label='Upload new' %}
+
+<form method="get" class="card filter-row panel-space">
+  <input type="text" name="q" value="{{ search }}" placeholder="Search tracks or artists" />
+  <select name="genre">
+    <option value="">All genres</option>
+    {% for item in genres %}
+      <option value="{{ item.slug }}" {% if active_genre == item.slug %}selected{% endif %}>{{ item.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-secondary">Filter</button>
+</form>
+
+{% if tracks %}
+  <section class="track-grid track-grid--featured">
+    {% for track in tracks %}
+      {% include 'components/track_card.html' with track=track %}
+    {% endfor %}
+  </section>
+{% else %}
+  {% include 'includes/empty_state.html' with title='No results' message='Try another keyword or genre filter.' %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/custom.css' %}" />
+{% endblock %}
+
+{% block content %}
+  <section class="qz-admin-dashboard">
+    <header class="qz-dashboard-header">
+      <div>
+        <h1>QazSound Analytics</h1>
+        <p>Operational overview for creators, listeners, and catalog growth.</p>
+      </div>
+      <span class="qz-dashboard-time">Updated: {{ dashboard_last_updated }}</span>
+    </header>
+
+    <div class="qz-stat-grid">
+      {% for card in dashboard_cards %}
+        <article class="qz-stat-card">
+          <p class="qz-stat-label">{{ card.label }}</p>
+          <p class="qz-stat-value">{{ card.value }}</p>
+        </article>
+      {% endfor %}
+    </div>
+
+    <div class="qz-chart-grid">
+      <article class="qz-chart-card">
+        <h2>Tracks Uploaded (Last 7 Days)</h2>
+        <canvas id="tracks7dChart" height="130"></canvas>
+      </article>
+
+      <article class="qz-chart-card">
+        <h2>Most Liked Tracks (Top 5)</h2>
+        <canvas id="topLikedChart" height="130"></canvas>
+      </article>
+    </div>
+
+    <article class="qz-chart-card qz-top-table-wrap">
+      <h2>Top Liked Tracks</h2>
+      <div class="qz-top-table-scroll">
+        <table class="qz-top-table">
+          <thead>
+            <tr>
+              <th>Track</th>
+              <th>Artist</th>
+              <th>Likes</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in top_liked_tracks %}
+              <tr>
+                <td>{{ item.title }}</td>
+                <td>{{ item.artist }}</td>
+                <td>{{ item.likes }}</td>
+                <td><a href="{{ item.change_url }}">Open</a></td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4">No like data yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  {{ tracks_7d_labels|json_script:"tracks-7d-labels" }}
+  {{ tracks_7d_values|json_script:"tracks-7d-values" }}
+  {{ top_liked_labels|json_script:"top-liked-labels" }}
+  {{ top_liked_values|json_script:"top-liked-values" }}
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    (function () {
+      function fromJsonScript(id) {
+        const node = document.getElementById(id);
+        if (!node) return [];
+        try {
+          return JSON.parse(node.textContent);
+        } catch (error) {
+          return [];
+        }
+      }
+
+      const tracksLabels = fromJsonScript("tracks-7d-labels");
+      const tracksValues = fromJsonScript("tracks-7d-values");
+      const topLabels = fromJsonScript("top-liked-labels");
+      const topValues = fromJsonScript("top-liked-values");
+
+      const commonGridColor = "rgba(160, 177, 206, 0.15)";
+      const commonTickColor = "#b9c6de";
+
+      const tracksCtx = document.getElementById("tracks7dChart");
+      if (tracksCtx && window.Chart) {
+        new Chart(tracksCtx, {
+          type: "bar",
+          data: {
+            labels: tracksLabels,
+            datasets: [
+              {
+                label: "Tracks",
+                data: tracksValues,
+                borderRadius: 10,
+                backgroundColor: "rgba(75, 210, 255, 0.75)",
+                borderColor: "rgba(75, 210, 255, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              x: {
+                ticks: { color: commonTickColor },
+                grid: { color: "transparent" },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: { precision: 0, color: commonTickColor },
+                grid: { color: commonGridColor },
+              },
+            },
+          },
+        });
+      }
+
+      const likedCtx = document.getElementById("topLikedChart");
+      if (likedCtx && window.Chart) {
+        new Chart(likedCtx, {
+          type: "bar",
+          data: {
+            labels: topLabels,
+            datasets: [
+              {
+                label: "Likes",
+                data: topValues,
+                borderRadius: 10,
+                backgroundColor: "rgba(255, 113, 190, 0.75)",
+                borderColor: "rgba(255, 113, 190, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: { precision: 0, color: commonTickColor },
+                grid: { color: commonGridColor },
+              },
+              y: {
+                ticks: { color: commonTickColor },
+                grid: { color: "transparent" },
+              },
+            },
+          },
+        });
+      }
+    })();
+  </script>
+
+  <div class="app-list-wrap">
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+  </div>
+{% endblock %}

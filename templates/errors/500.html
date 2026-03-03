@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}500 | QazSound{% endblock %}
+
+{% block content %}
+<section class="card form-wrap">
+  <h1>Server error</h1>
+  <p class="muted">Something went wrong on our side. Please try again shortly.</p>
+  <a href="{% url 'tracks:home' %}" class="btn btn-primary">Back to Home</a>
+</section>
+{% endblock %}

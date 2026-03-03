@@ -1,0 +1,60 @@
+{% load static %}
+<section class="playerbar" data-playerbar>
+  <div class="container playerbar-inner">
+    <div class="player-track">
+      <img
+        id="player-cover"
+        class="player-cover"
+        src="{% static 'img/placeholders/cover.jpg' %}"
+        alt="Now playing cover"
+      />
+      <div class="player-meta">
+        <p id="player-title" class="player-title">Nothing playing</p>
+        <p id="player-artist" class="player-artist muted">Choose any track to start playback.</p>
+        <p id="player-status" class="player-status muted" aria-live="polite"></p>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls" role="group" aria-label="Playback controls">
+        <button type="button" id="player-prev" class="icon-btn player-btn" aria-label="Previous track">⏮</button>
+        <button type="button" id="player-playpause" class="icon-btn player-btn player-btn-main" aria-label="Play or pause">▶</button>
+        <button type="button" id="player-next" class="icon-btn player-btn" aria-label="Next track">⏭</button>
+      </div>
+
+      <div class="player-progress-row">
+        <span id="player-current-time" class="player-time">0:00</span>
+        <input
+          id="player-progress"
+          class="player-progress"
+          type="range"
+          min="0"
+          max="1000"
+          step="1"
+          value="0"
+          aria-label="Seek position"
+        />
+        <span id="player-duration" class="player-time">0:00</span>
+      </div>
+    </div>
+
+    <div class="player-side">
+      <label class="player-volume-wrap" for="player-volume">
+        <span class="muted small">Vol</span>
+        <input
+          id="player-volume"
+          class="player-volume"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value="1"
+          aria-label="Volume"
+        />
+      </label>
+      <a id="player-open-track" class="btn btn-secondary btn-sm player-open-link" href="/">Open track</a>
+    </div>
+  </div>
+
+  <audio id="global-audio" preload="metadata" crossorigin="anonymous"></audio>
+</section>

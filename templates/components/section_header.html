@@ -1,0 +1,14 @@
+<header class="section-header">
+  <div>
+    {% if eyebrow %}
+      <p class="section-eyebrow">{{ eyebrow }}</p>
+    {% endif %}
+    <h2>{{ title }}</h2>
+    {% if subtitle %}
+      <p class="muted section-subtitle">{{ subtitle }}</p>
+    {% endif %}
+  </div>
+  {% if action_url and action_label %}
+    <a href="{{ action_url }}" class="btn btn-secondary btn-sm">{{ action_label }}</a>
+  {% endif %}
+</header>

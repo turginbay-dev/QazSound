@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_create %}Upload Track{% else %}Edit Track{% endif %} | QazSound{% endblock %}
+
+{% block content %}
+<section class="form-wrap card">
+  <h1>{% if is_create %}Publish Track{% else %}Edit Track{% endif %}</h1>
+  <p class="muted">Step 1: choose source, Step 2: complete metadata, Step 3: publish.</p>
+
+  <div class="upload-steps" aria-hidden="true">
+    <span class="upload-step is-active">1. Source</span>
+    <span class="upload-step">2. Metadata</span>
+    <span class="upload-step">3. Publish</span>
+  </div>
+
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    class="form-grid js-track-form"
+    data-require-audio="{% if is_create %}true{% else %}false{% endif %}"
+    data-youtube-metadata-url="{% url 'tracks:youtube_metadata_preview' %}"
+  >
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="form-error field-full">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="field">
+      <label for="{{ form.source_type.id_for_label }}">Source Type</label>
+      {{ form.source_type }}
+      {% if form.source_type.errors %}<div class="field-error">{{ form.source_type.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field js-youtube-only">
+      <label for="{{ form.youtube_url.id_for_label }}">YouTube URL</label>
+      <div class="inline-field">
+        {{ form.youtube_url }}
+        <button type="button" class="btn btn-secondary btn-sm js-youtube-fetch">Fetch metadata</button>
+      </div>
+      <small class="muted js-youtube-status">
+        Paste a YouTube link. On publish, system will import it and save as MP3 file automatically.
+      </small>
+      {% if form.youtube_url.errors %}<div class="field-error">{{ form.youtube_url.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field js-upload-only">
+      <label for="{{ form.audio_file.id_for_label }}">Audio file</label>
+      {{ form.audio_file }}
+      {% if form.audio_file.errors %}<div class="field-error">{{ form.audio_file.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.title.id_for_label }}">Title</label>
+      {{ form.title }}
+      {% if form.title.errors %}<div class="field-error">{{ form.title.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.artist_name.id_for_label }}">Artist</label>
+      {{ form.artist_name }}
+      {% if form.artist_name.errors %}<div class="field-error">{{ form.artist_name.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field field-full">
+      <label for="{{ form.description.id_for_label }}">Description</label>
+      {{ form.description }}
+      {% if form.description.errors %}<div class="field-error">{{ form.description.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.genres.id_for_label }}">Genres</label>
+      {{ form.genres }}
+      {% if form.genres.errors %}<div class="field-error">{{ form.genres.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.duration_seconds.id_for_label }}">Duration (seconds)</label>
+      {{ form.duration_seconds }}
+      {% if form.duration_seconds.errors %}<div class="field-error">{{ form.duration_seconds.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field">
+      <label for="{{ form.cover.id_for_label }}">Cover image upload</label>
+      {{ form.cover }}
+      {% if form.cover.errors %}<div class="field-error">{{ form.cover.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field js-youtube-only">
+      <label for="{{ form.external_cover_url.id_for_label }}">External thumbnail URL</label>
+      {{ form.external_cover_url }}
+      {% if form.external_cover_url.errors %}<div class="field-error">{{ form.external_cover_url.errors }}</div>{% endif %}
+    </div>
+
+    <div class="field-full" id="client-form-errors"></div>
+
+    <div class="button-row field-full">
+      <button type="submit" class="btn btn-primary">{% if is_create %}Publish{% else %}Save Changes{% endif %}</button>
+      <a href="{% if track %}{% url 'tracks:track_detail' track.id %}{% else %}{% url 'tracks:home' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

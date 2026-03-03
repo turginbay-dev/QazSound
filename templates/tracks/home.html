@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Home | QazSound{% endblock %}
+
+{% block content %}
+<section class="hero card">
+  <p class="hero-kicker">QazSound</p>
+  <h1>Where premium sound meets creator energy.</h1>
+  <p class="muted">Publish uploads or import YouTube links safely, then grow your favorites collection.</p>
+
+  <form method="get" class="hero-search">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search tracks, artists, genres" />
+    <select name="genre">
+      <option value="">All genres</option>
+      {% for item in genres %}
+        <option value="{{ item.slug }}" {% if active_genre == item.slug %}selected{% endif %}>{{ item.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-primary" type="submit">Explore</button>
+  </form>
+
+  {% if request.user.is_authenticated %}
+    <a class="btn btn-secondary hero-cta" href="{% url 'tracks:track_create' %}">Upload New Track</a>
+  {% endif %}
+</section>
+
+{% include 'components/section_header.html' with eyebrow='Discover' title='Featured' subtitle='Handpicked from the latest community tracks.' action_url='/tracks/' action_label='View all' %}
+
+{% if featured_tracks %}
+  <section class="track-grid track-grid--featured">
+    {% for track in featured_tracks %}
+      {% include 'components/track_card.html' with track=track %}
+    {% endfor %}
+  </section>
+{% else %}
+  {% include 'includes/empty_state.html' with title='No tracks yet' message='Upload the first track to kick off the feed.' action_url='/tracks/add/' action_label='Upload track' %}
+{% endif %}
+
+<section class="home-split">
+  <div>
+    {% include 'components/section_header.html' with eyebrow='Latest' title='Fresh uploads' subtitle='Recently published tracks from creators.' %}
+    {% if fresh_tracks %}
+      <section class="mini-track-grid card panel-space">
+        {% for track in fresh_tracks %}
+          {% include 'components/mini_track_card.html' with track=track show_like=True %}
+        {% endfor %}
+      </section>
+    {% else %}
+      {% include 'includes/empty_state.html' with title='Nothing fresh yet' message='Fresh uploads will appear here.' %}
+    {% endif %}
+  </div>
+
+  <aside>
+    {% include 'components/section_header.html' with eyebrow='Now' title='Trending' subtitle='Most liked and replayed this moment.' %}
+    {% if trending_tracks %}
+      <section class="mini-track-grid card panel-space">
+        {% for track in trending_tracks %}
+          {% include 'components/mini_track_card.html' with track=track show_like=True %}
+        {% endfor %}
+      </section>
+    {% else %}
+      {% include 'includes/empty_state.html' with title='No trending data yet' message='Tracks will trend after listeners engage.' %}
+    {% endif %}
+  </aside>
+</section>
+{% endblock %}

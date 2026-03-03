@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ track.title }} | QazSound{% endblock %}
+
+{% block content %}
+{% url 'tracks:track_detail' track.id as track_url %}
+<section class="card track-detail">
+  <img src="{{ track.cover_url }}" alt="{{ track.title }} cover" class="track-detail-cover" />
+
+  <div class="track-detail-content">
+    <p class="muted">{{ track.get_source_type_display }} Track</p>
+    <h1>{{ track.title }}</h1>
+    <p>by <strong>{{ track.artist.name }}</strong></p>
+
+    {% if track.description %}
+      <p class="muted">{{ track.description }}</p>
+    {% endif %}
+
+    <div class="badge-row">
+      {% for genre in track.genres.all %}
+        <span class="badge">{{ genre.name }}</span>
+      {% empty %}
+        <span class="badge badge-muted">No genre</span>
+      {% endfor %}
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primary track-detail-play js-player-play"
+      aria-label="Play {{ track.title }}"
+      data-track-id="{{ track.id }}"
+      data-title="{{ track.title }}"
+      data-artist="{{ track.artist.name }}"
+      data-cover-url="{{ track.cover_url }}"
+      data-audio-url="{{ track.audio_url }}"
+      data-source-type="{{ track.source_type }}"
+      data-track-url="{{ track_url }}"
+    >
+      Play In PlayerBar
+    </button>
+
+    {% if track.audio_file %}
+      <div class="global-player-note card panel-space">
+        <p class="muted">
+          {% if request.LANGUAGE_CODE == 'ru' %}
+            Воспроизведение управляется глобальным плеером внизу страницы.
+          {% else %}
+            Ойнату беттің төменгі жағындағы global player арқылы басқарылады.
+          {% endif %}
+        </p>
+        {% if track.source_type == 'YOUTUBE' and track.youtube_url %}
+          <p class="muted">
+            Source: <a href="{{ track.youtube_url }}" target="_blank" rel="noopener noreferrer">YouTube link</a>
+          </p>
+        {% endif %}
+      </div>
+    {% elif track.source_type == 'YOUTUBE' and track.youtube_id %}
+      <div class="youtube-embed-wrap">
+        <iframe
+          src="{{ track.embed_url }}"
+          title="{{ track.title }}"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          loading="lazy"
+        ></iframe>
+      </div>
+      <p class="muted youtube-fallback">
+        If video doesn't play, open on YouTube:
+        <a href="{{ track.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+          Watch on YouTube
+        </a>
+      </p>
+    {% else %}
+      <p class="muted">No playable source is available for this track.</p>
+    {% endif %}
+
+    <div class="track-meta-row muted small">
+      <span data-like-count data-track-id="{{ track.id }}">♥ {{ track.likes_count }}</span>
+      <span>▶ {{ track.plays_count }}</span>
+      <span>Added {{ track.created_at|date:'M d, Y' }}</span>
+    </div>
+
+    {% if request.user.is_authenticated %}
+      <form method="post" action="{% url 'interactions:toggle_like' track.id %}" class="like-form js-like-form" data-track-id="{{ track.id }}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+        <button
+          type="submit"
+          class="btn like-pill js-like-button {% if is_liked %}is-liked{% endif %}"
+          aria-label="Toggle favorite"
+          aria-pressed="{% if is_liked %}true{% else %}false{% endif %}"
+          data-liked="{% if is_liked %}1{% else %}0{% endif %}"
+        >
+          <span class="icon-heart" aria-hidden="true">{% if is_liked %}♥{% else %}♡{% endif %}</span>
+          <span>{% if is_liked %}In favorites{% else %}Add to favorites{% endif %}</span>
+        </button>
+      </form>
+    {% endif %}
+
+    {% if request.user.is_authenticated and request.user == track.owner %}
+      <div class="button-row">
+        <a href="{% url 'tracks:track_edit' track.id %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'tracks:track_delete' track.id %}" class="btn btn-danger">Delete</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

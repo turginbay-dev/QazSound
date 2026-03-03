@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}404 | QazSound{% endblock %}
+
+{% block content %}
+<section class="card form-wrap">
+  <h1>Page not found</h1>
+  <p class="muted">The page you requested does not exist or was moved.</p>
+  <a href="{% url 'tracks:home' %}" class="btn btn-primary">Back to Home</a>
+</section>
+{% endblock %}

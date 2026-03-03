@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if request.LANGUAGE_CODE == 'ru' %}Профиль{% else %}Профиль{% endif %} | QazSound{% endblock %}
+
+{% block content %}
+{% if request.LANGUAGE_CODE == 'ru' %}
+  {% include 'components/section_header.html' with eyebrow='Профиль' title=user_profile.effective_name subtitle='Ваши треки и управление аккаунтом.' action_url='/tracks/add/' action_label='Загрузить трек' %}
+{% else %}
+  {% include 'components/section_header.html' with eyebrow='Профиль' title=user_profile.effective_name subtitle='Сіздің тректер мен аккаунт басқару бөлімі.' action_url='/tracks/add/' action_label='Трек жүктеу' %}
+{% endif %}
+
+<section class="card panel-space profile-card profile-identity-card">
+  <div class="profile-identity">
+    <img src="{{ user_profile.avatar_url }}" alt="{{ user_profile.effective_name }}" class="profile-avatar" />
+    <div class="stack-sm">
+      <h2>{{ user_profile.effective_name }}</h2>
+      <p class="muted">@{{ request.user.username }}</p>
+      <div class="button-row">
+        <a class="btn btn-secondary btn-sm" href="{% url 'users:settings' %}">
+          {% if request.LANGUAGE_CODE == 'ru' %}Открыть настройки{% else %}Баптауларды ашу{% endif %}
+        </a>
+        <a class="btn btn-secondary btn-sm" href="{% url 'interactions:favorites' %}">
+          {% if request.LANGUAGE_CODE == 'ru' %}Избранное{% else %}Таңдаулылар{% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card panel-space profile-card">
+  <h3>{% if request.LANGUAGE_CODE == 'ru' %}Мои треки{% else %}Менің тректерім{% endif %}</h3>
+
+  {% if tracks %}
+    <div class="mini-track-grid">
+      {% for track in tracks %}
+        {% include 'components/mini_track_card.html' with track=track show_like=False %}
+      {% endfor %}
+    </div>
+  {% else %}
+    {% if request.LANGUAGE_CODE == 'ru' %}
+      {% include 'includes/empty_state.html' with title='Пока нет треков' message='Опубликуйте первый трек и он появится здесь.' action_url='/tracks/add/' action_label='Загрузить трек' %}
+    {% else %}
+      {% include 'includes/empty_state.html' with title='Әлі трек жоқ' message='Алғашқы тректі жариялаңыз, ол осы жерде көрінеді.' action_url='/tracks/add/' action_label='Трек жүктеу' %}
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

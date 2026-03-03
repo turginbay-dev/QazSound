@@ -1,0 +1,14 @@
+<section class="card empty-state">
+  <h3>{{ title|default:'Nothing here yet' }}</h3>
+  <p class="muted">{{ message|default:'No items found for this view.' }}</p>
+
+  <div class="empty-skeleton" aria-hidden="true">
+    <span class="skeleton-line"></span>
+    <span class="skeleton-line"></span>
+    <span class="skeleton-line short"></span>
+  </div>
+
+  {% if action_url and action_label %}
+    <a class="btn btn-primary" href="{{ action_url }}">{{ action_label }}</a>
+  {% endif %}
+</section>

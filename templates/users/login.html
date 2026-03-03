@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | QazSound{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+  <div class="card auth-card">
+    <h1>Welcome back</h1>
+    <p class="muted">Sign in to upload and manage your tracks.</p>
+
+    <form method="post" class="stack-sm">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}<div class="field-error">{{ form.username.errors }}</div>{% endif %}
+      </div>
+
+      <div class="field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        {% if form.password.errors %}<div class="field-error">{{ form.password.errors }}</div>{% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary">Login</button>
+    </form>
+
+    <p class="muted">No account? <a href="{% url 'users:register' %}">Create one</a></p>
+  </div>
+</section>
+{% endblock %}

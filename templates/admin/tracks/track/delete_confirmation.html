@@ -1,0 +1,10 @@
+{% extends "admin/delete_confirmation.html" %}
+{% load i18n %}
+
+{% block content %}
+  <div class="qz-delete-warning">
+    <strong>Warning:</strong>
+    {{ delete_warning|default:"Deleting this track is permanent and removes related interaction data." }}
+  </div>
+  {{ block.super }}
+{% endblock %}

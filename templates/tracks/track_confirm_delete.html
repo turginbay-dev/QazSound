@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete {{ track.title }} | QazSound{% endblock %}
+
+{% block content %}
+<section class="card form-wrap">
+  <h1>Delete Track</h1>
+  <p>Are you sure you want to delete <strong>{{ track.title }}</strong>? This action cannot be undone.</p>
+
+  <form method="post" class="button-row">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Delete Permanently</button>
+    <a class="btn btn-secondary" href="{% url 'tracks:track_detail' track.id %}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

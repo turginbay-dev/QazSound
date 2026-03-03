@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Favorites | QazSound{% endblock %}
+
+{% block content %}
+{% include 'components/section_header.html' with eyebrow='Library' title='Favorites' subtitle='Tracks you marked as favorite.' %}
+
+{% if tracks %}
+  <section class="mini-track-grid card panel-space">
+    {% for track in tracks %}
+      {% include 'components/mini_track_card.html' with track=track show_like=True %}
+    {% endfor %}
+  </section>
+{% else %}
+  {% include 'includes/empty_state.html' with title='No favorites yet' message='Tap the heart icon on any track to save it here.' action_url='/' action_label='Browse tracks' %}
+{% endif %}
+{% endblock %}
