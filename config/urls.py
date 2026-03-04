@@ -4,7 +4,10 @@ from django.contrib import admin
 from django.shortcuts import render
 from django.urls import include, path
 
+from apps.tracks.views import home as tracks_home
+
 urlpatterns = [
+    path("", tracks_home, name="home"),
     path("admin/", admin.site.urls),
     path("", include("apps.tracks.urls")),
     path("", include("apps.interactions.urls")),
