@@ -1,10 +1,10 @@
 (function () {
-  const likeForms = document.querySelectorAll(".js-like-form");
-  if (!likeForms.length) return;
-
   function applyLikeState(trackId, liked, likesCount) {
+    const resolvedTrackId = String(trackId || "").trim();
+    if (!resolvedTrackId) return;
+
     document
-      .querySelectorAll(`.js-like-form[data-track-id="${trackId}"] .js-like-button`)
+      .querySelectorAll(`.js-like-form[data-track-id="${resolvedTrackId}"] .js-like-button`)
       .forEach((button) => {
         button.classList.toggle("is-liked", liked);
         button.setAttribute("aria-pressed", liked ? "true" : "false");
@@ -24,43 +24,48 @@
       });
 
     document
-      .querySelectorAll(`[data-like-count][data-track-id="${trackId}"]`)
+      .querySelectorAll(`[data-like-count][data-track-id="${resolvedTrackId}"]`)
       .forEach((counter) => {
         const hasPrefix = counter.textContent.trim().startsWith("♥");
         counter.textContent = hasPrefix ? `♥ ${likesCount}` : String(likesCount);
       });
   }
 
-  likeForms.forEach((form) => {
-    form.addEventListener("submit", async (event) => {
-      if (!window.fetch) return;
+  window.qazsoundApplyLikeState = applyLikeState;
 
-      event.preventDefault();
+  document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.classList.contains("js-like-form")) {
+      return;
+    }
 
-      const csrfToken = form.querySelector("input[name='csrfmiddlewaretoken']")?.value;
-      const formData = new FormData(form);
-      const trackId = form.dataset.trackId;
+    if (!window.fetch) return;
 
-      try {
-        const response = await fetch(form.action, {
-          method: "POST",
-          headers: {
-            "X-Requested-With": "XMLHttpRequest",
-            Accept: "application/json",
-            "X-CSRFToken": csrfToken || "",
-          },
-          body: formData,
-        });
+    event.preventDefault();
 
-        if (!response.ok) {
-          throw new Error("Like toggle failed");
-        }
+    const csrfToken = form.querySelector("input[name='csrfmiddlewaretoken']")?.value;
+    const formData = new FormData(form);
+    const trackId = form.dataset.trackId;
 
-        const payload = await response.json();
-        applyLikeState(trackId || payload.track_id, payload.liked, payload.likes_count);
-      } catch (error) {
-        form.submit();
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Accept: "application/json",
+          "X-CSRFToken": csrfToken || "",
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Like toggle failed");
       }
-    });
+
+      const payload = await response.json();
+      applyLikeState(trackId || payload.track_id, payload.liked, payload.likes_count);
+    } catch (error) {
+      form.submit();
+    }
   });
 })();

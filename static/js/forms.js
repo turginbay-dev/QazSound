@@ -1,7 +1,4 @@
 (function () {
-  const trackForms = document.querySelectorAll(".js-track-form");
-  if (!trackForms.length) return;
-
   const SOURCE_UPLOAD = "UPLOAD";
   const SOURCE_YOUTUBE = "YOUTUBE";
 
@@ -77,58 +74,81 @@
     }
   }
 
-  trackForms.forEach((form) => {
+  function validateTrackForm(form, event) {
+    const errors = [];
     const sourceField = form.querySelector('select[name="source_type"]');
-    const fetchButton = form.querySelector(".js-youtube-fetch");
+    const titleField = form.querySelector('input[name="title"]');
+    const artistField = form.querySelector('input[name="artist_name"]');
+    const audioField = form.querySelector('input[name="audio_file"]');
+    const youtubeField = form.querySelector('input[name="youtube_url"]');
+    const sourceType = sourceField ? sourceField.value : SOURCE_UPLOAD;
+    const requireAudio = form.dataset.requireAudio === "true";
 
-    if (sourceField) {
+    if (titleField && !titleField.value.trim()) {
+      errors.push("Title is required.");
+    }
+
+    if (artistField && !artistField.value.trim()) {
+      errors.push("Artist name is required.");
+    }
+
+    if (sourceType === SOURCE_UPLOAD && requireAudio && audioField && !audioField.value) {
+      errors.push("Audio file is required for upload source.");
+    }
+
+    if (sourceType === SOURCE_YOUTUBE && youtubeField && !youtubeField.value.trim()) {
+      errors.push("YouTube URL is required for YouTube source.");
+    }
+
+    const errorBox = form.querySelector("#client-form-errors") || document.getElementById("client-form-errors");
+    if (errorBox) {
+      errorBox.innerHTML = "";
+    }
+
+    if (!errors.length) {
+      return;
+    }
+
+    event.preventDefault();
+    if (errorBox) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "form-error";
+      wrapper.textContent = errors.join(" ");
+      errorBox.appendChild(wrapper);
+    }
+  }
+
+  function initTrackForms(root) {
+    (root || document).querySelectorAll(".js-track-form").forEach((form) => {
       toggleSourceSections(form);
-      sourceField.addEventListener("change", () => toggleSourceSections(form));
-    }
-
-    if (fetchButton) {
-      fetchButton.addEventListener("click", () => fetchYoutubeMetadata(form));
-    }
-
-    form.addEventListener("submit", (event) => {
-      const errors = [];
-      const titleField = form.querySelector('input[name="title"]');
-      const artistField = form.querySelector('input[name="artist_name"]');
-      const audioField = form.querySelector('input[name="audio_file"]');
-      const youtubeField = form.querySelector('input[name="youtube_url"]');
-      const sourceType = sourceField ? sourceField.value : SOURCE_UPLOAD;
-      const requireAudio = form.dataset.requireAudio === "true";
-
-      if (titleField && !titleField.value.trim()) {
-        errors.push("Title is required.");
-      }
-
-      if (artistField && !artistField.value.trim()) {
-        errors.push("Artist name is required.");
-      }
-
-      if (sourceType === SOURCE_UPLOAD && requireAudio && audioField && !audioField.value) {
-        errors.push("Audio file is required for upload source.");
-      }
-
-      if (sourceType === SOURCE_YOUTUBE && youtubeField && !youtubeField.value.trim()) {
-        errors.push("YouTube URL is required for YouTube source.");
-      }
-
-      const errorBox = document.getElementById("client-form-errors");
-      if (errorBox) {
-        errorBox.innerHTML = "";
-      }
-
-      if (errors.length) {
-        event.preventDefault();
-        if (errorBox) {
-          const wrapper = document.createElement("div");
-          wrapper.className = "form-error";
-          wrapper.textContent = errors.join(" ");
-          errorBox.appendChild(wrapper);
-        }
-      }
     });
+  }
+
+  document.addEventListener("change", (event) => {
+    const sourceField = event.target.closest('.js-track-form select[name="source_type"]');
+    if (!sourceField) return;
+    const form = sourceField.closest(".js-track-form");
+    if (!form) return;
+    toggleSourceSections(form);
   });
+
+  document.addEventListener("click", (event) => {
+    const fetchButton = event.target.closest(".js-youtube-fetch");
+    if (!fetchButton) return;
+    const form = fetchButton.closest(".js-track-form");
+    if (!form) return;
+    event.preventDefault();
+    fetchYoutubeMetadata(form);
+  });
+
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.classList.contains("js-track-form")) {
+      return;
+    }
+    validateTrackForm(form, event);
+  });
+
+  initTrackForms(document);
+  window.addEventListener("qazsound:navigation:render", () => initTrackForms(document));
 })();

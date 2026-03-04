@@ -32,6 +32,7 @@
           data-audio-url="{{ track.audio_url }}"
           data-source-type="{{ track.source_type }}"
           data-track-url="{{ track_url }}"
+          data-is-liked="{% if track.id in liked_track_ids %}1{% else %}0{% endif %}"
         >
           Play
         </button>

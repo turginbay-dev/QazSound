@@ -1,6 +1,6 @@
 (function () {
-  const STORAGE_KEY = "qazsound.player.state.v1";
-  const HISTORY_KEY = "qazsound.player.history.v1";
+  const STORAGE_KEY = "qazsound.player.state.v2";
+  const HISTORY_KEY = "qazsound.player.history.v2";
   const SOURCE_UPLOAD = "UPLOAD";
   const SOURCE_YOUTUBE = "YOUTUBE";
   const SAVE_THROTTLE_MS = 500;
@@ -14,19 +14,15 @@
   const refs = {
     cover: document.getElementById("player-cover"),
     title: document.getElementById("player-title"),
-    artist: document.getElementById("player-artist"),
     status: document.getElementById("player-status"),
     playPause: document.getElementById("player-playpause"),
     prev: document.getElementById("player-prev"),
     next: document.getElementById("player-next"),
-    progress: document.getElementById("player-progress"),
-    currentTime: document.getElementById("player-current-time"),
-    duration: document.getElementById("player-duration"),
-    volume: document.getElementById("player-volume"),
-    openTrack: document.getElementById("player-open-track"),
+    like: document.getElementById("player-like"),
   };
 
   const placeholderCover = refs.cover ? refs.cover.src : "";
+
   let saveTimer = null;
   let history = {
     items: [],
@@ -41,25 +37,14 @@
     audioUrl: "",
     sourceType: SOURCE_UPLOAD,
     trackUrl: "/",
+    isLiked: false,
   };
-
-  function setPlayerBarVisible(isVisible) {
-    playerBar.classList.toggle("is-visible", isVisible);
-    document.body.classList.toggle("has-playerbar", isVisible);
-  }
 
   function clamp(value, min, max, fallback = min) {
     if (!Number.isFinite(value)) {
       return fallback;
     }
     return Math.min(Math.max(value, min), max);
-  }
-
-  function formatTime(totalSeconds) {
-    const seconds = clamp(totalSeconds, 0, 24 * 60 * 60, 0);
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
-    return `${min}:${String(sec).padStart(2, "0")}`;
   }
 
   function toAbsoluteUrl(url) {
@@ -80,6 +65,14 @@
     }
   }
 
+  function asBoolean(value) {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value > 0;
+    if (typeof value !== "string") return false;
+    const normalized = value.trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+  }
+
   function normalizeTrack(raw = {}) {
     const trackId = String(raw.trackId || raw.track_id || "").trim();
     const sourceRaw = String(raw.sourceType || raw.source_type || SOURCE_UPLOAD).toUpperCase();
@@ -93,11 +86,33 @@
       audioUrl: String(raw.audioUrl || raw.audio_url || "").trim(),
       sourceType,
       trackUrl: String(raw.trackUrl || raw.track_url || (trackId ? `/tracks/${trackId}/` : "/")).trim() || "/",
+      isLiked: asBoolean(raw.isLiked ?? raw.is_liked ?? raw.liked ?? false),
     };
   }
 
+  function getCookie(name) {
+    const cookie = document.cookie
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith(`${name}=`));
+    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : "";
+  }
+
+  function setPlayerBarVisible(isVisible) {
+    playerBar.classList.toggle("is-visible", isVisible);
+    document.body.classList.toggle("has-playerbar", isVisible);
+  }
+
+  function sameTrack(first, second) {
+    return (
+      first.trackId === second.trackId &&
+      first.sourceType === second.sourceType &&
+      toAbsoluteUrl(first.audioUrl) === toAbsoluteUrl(second.audioUrl)
+    );
+  }
+
   function ensureButtonDefaults(button) {
-    if (button.dataset.defaultLabel) return;
+    if (!button || button.dataset.defaultLabel) return;
     const isIconButton = button.classList.contains("icon-btn");
     const fallbackLabel = isIconButton ? "▶" : "Play";
     button.dataset.defaultLabel = (button.textContent || "").trim() || fallbackLabel;
@@ -105,6 +120,8 @@
 
   function applyPlayButtonState(button, state) {
     ensureButtonDefaults(button);
+    if (!button) return;
+
     const isIconButton = button.classList.contains("icon-btn");
     const defaultLabel = button.dataset.defaultLabel;
 
@@ -124,10 +141,7 @@
   }
 
   function refreshPlayTriggers() {
-    const isPlaying =
-      Boolean(playbackState.audioUrl) &&
-      !audio.paused &&
-      !audio.ended;
+    const isPlaying = Boolean(playbackState.audioUrl) && !audio.paused && !audio.ended;
 
     document.querySelectorAll(".js-player-play").forEach((button) => {
       const buttonTrack = trackFromTrigger(button);
@@ -194,10 +208,7 @@
     return {
       ...playbackState,
       currentTime: audio.currentTime || 0,
-      isPlaying:
-        Boolean(playbackState.audioUrl) &&
-        !audio.paused &&
-        !audio.ended,
+      isPlaying: Boolean(playbackState.audioUrl) && !audio.paused && !audio.ended,
       volume: audio.volume,
     };
   }
@@ -206,7 +217,7 @@
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(getRuntimeState()));
     } catch (error) {
-      // Ignore storage write errors and keep playback functional.
+      // Ignore storage write errors.
     }
   }
 
@@ -214,18 +225,16 @@
     if (saveTimer) {
       window.clearTimeout(saveTimer);
     }
+
     saveTimer = window.setTimeout(() => {
       persistStateNow();
       saveTimer = null;
     }, SAVE_THROTTLE_MS);
   }
 
-  function updateStatus(message, options = {}) {
+  function updateStatus(message) {
     if (!refs.status) return;
-
     refs.status.textContent = message || "";
-    refs.status.classList.toggle("has-alert", Boolean(options.error));
-    refs.status.classList.toggle("is-active", Boolean(options.active));
   }
 
   function updateTrackMeta() {
@@ -235,24 +244,15 @@
     }
 
     if (refs.title) {
-      refs.title.textContent = playbackState.title || "Nothing playing";
-    }
-
-    if (refs.artist) {
-      refs.artist.textContent = playbackState.artist || "";
-    }
-
-    if (refs.openTrack) {
-      refs.openTrack.href = playbackState.trackUrl || "/";
+      const artistSuffix = playbackState.artist ? ` · ${playbackState.artist}` : "";
+      refs.title.textContent = `${playbackState.title || "Nothing playing"}${artistSuffix}`;
     }
   }
 
   function setPlaybackControlsEnabled(enabled) {
-    [refs.playPause, refs.progress, refs.volume].forEach((control) => {
-      if (control) {
-        control.disabled = !enabled;
-      }
-    });
+    if (refs.playPause) refs.playPause.disabled = !enabled;
+    if (refs.prev) refs.prev.disabled = history.index <= 0;
+    if (refs.next) refs.next.disabled = !(history.index >= 0 && history.index < history.items.length - 1);
   }
 
   function updateHistoryButtons() {
@@ -266,39 +266,86 @@
   function updatePlayPauseButton() {
     if (!refs.playPause) return;
 
-    const isPlaying =
-      Boolean(playbackState.audioUrl) &&
-      !audio.paused &&
-      !audio.ended;
-
+    const isPlaying = Boolean(playbackState.audioUrl) && !audio.paused && !audio.ended;
     refs.playPause.textContent = isPlaying ? "⏸" : "▶";
     refs.playPause.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
     refreshPlayTriggers();
   }
 
-  function updateProgress() {
-    if (!refs.progress || !refs.currentTime || !refs.duration) return;
+  function updateLikeButton() {
+    if (!refs.like) return;
 
-    const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-    const current = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+    const hasTrack = Boolean(playbackState.trackId);
+    refs.like.disabled = !hasTrack;
+    refs.like.classList.toggle("is-liked", hasTrack && playbackState.isLiked);
+    refs.like.setAttribute("aria-pressed", hasTrack && playbackState.isLiked ? "true" : "false");
+    refs.like.dataset.liked = hasTrack && playbackState.isLiked ? "1" : "0";
 
-    refs.currentTime.textContent = formatTime(current);
-
-    if (duration > 0) {
-      refs.progress.value = String(Math.round((current / duration) * 1000));
-      refs.duration.textContent = formatTime(duration);
-    } else {
-      refs.progress.value = "0";
-      refs.duration.textContent = "0:00";
+    const icon = refs.like.querySelector(".icon-heart");
+    if (icon) {
+      icon.textContent = hasTrack && playbackState.isLiked ? "♥" : "♡";
     }
   }
 
-  function sameTrack(first, second) {
-    return (
-      first.trackId === second.trackId &&
-      first.sourceType === second.sourceType &&
-      toAbsoluteUrl(first.audioUrl) === toAbsoluteUrl(second.audioUrl)
-    );
+  function applyLikeStateToPage(trackId, liked, likesCount) {
+    if (typeof window.qazsoundApplyLikeState === "function") {
+      window.qazsoundApplyLikeState(trackId, liked, likesCount);
+      return;
+    }
+
+    document
+      .querySelectorAll(`[data-like-count][data-track-id="${trackId}"]`)
+      .forEach((counter) => {
+        const hasPrefix = counter.textContent.trim().startsWith("♥");
+        counter.textContent = hasPrefix ? `♥ ${likesCount}` : String(likesCount);
+      });
+  }
+
+  async function toggleCurrentTrackLike() {
+    if (!refs.like || !playbackState.trackId) return;
+
+    const trackId = playbackState.trackId;
+    const csrfToken = getCookie("csrftoken");
+
+    refs.like.disabled = true;
+
+    try {
+      const response = await fetch(`/tracks/${trackId}/like/`, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Accept: "application/json",
+          "X-CSRFToken": csrfToken || "",
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({
+          next: window.location.pathname + window.location.search,
+        }),
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        window.location.assign(`/auth/login/?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Could not toggle like");
+      }
+
+      const payload = await response.json();
+      const liked = Boolean(payload.liked);
+      const likesCount = Number(payload.likes_count) || 0;
+
+      playbackState.isLiked = liked;
+      updateLikeButton();
+      applyLikeStateToPage(trackId, liked, likesCount);
+      updateStatus(liked ? "Added to favorites." : "Removed from favorites.");
+      schedulePersist();
+    } catch (error) {
+      updateStatus("Could not update favorite.");
+    } finally {
+      refs.like.disabled = false;
+    }
   }
 
   function pushHistory(track) {
@@ -325,23 +372,34 @@
 
   function attemptPlay() {
     const playPromise = audio.play();
+
     if (playPromise && typeof playPromise.then === "function") {
       playPromise
         .then(() => {
           updatePlayPauseButton();
-          updateStatus("Playing from PlayerBar.", { active: true });
+          updateStatus("Playing.");
           schedulePersist();
         })
         .catch(() => {
           updatePlayPauseButton();
-          updateStatus("Tap play to resume playback.");
+          updateStatus("Tap play to resume.");
           schedulePersist();
         });
       return;
     }
 
     updatePlayPauseButton();
-    updateStatus("Playing from PlayerBar.", { active: true });
+    updateStatus("Playing.");
+    schedulePersist();
+  }
+
+  function clearAudio(message) {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    setPlaybackControlsEnabled(false);
+    updatePlayPauseButton();
+    updateStatus(message);
     schedulePersist();
   }
 
@@ -356,6 +414,7 @@
     playbackState = normalized;
     setPlayerBarVisible(true);
     updateTrackMeta();
+    updateLikeButton();
 
     if (rememberHistory) {
       pushHistory(normalized);
@@ -363,27 +422,8 @@
       updateHistoryButtons();
     }
 
-    if (normalized.sourceType === SOURCE_YOUTUBE && !normalized.audioUrl) {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
-      setPlaybackControlsEnabled(false);
-      updateProgress();
-      updatePlayPauseButton();
-      updateStatus("Open track to play. YouTube track has no imported audio yet.");
-      persistStateNow();
-      return;
-    }
-
     if (!normalized.audioUrl) {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
-      setPlaybackControlsEnabled(false);
-      updateProgress();
-      updatePlayPauseButton();
-      updateStatus("Audio source is not available for this track.", { error: true });
-      persistStateNow();
+      clearAudio("Audio source is not available for this track.");
       return;
     }
 
@@ -391,10 +431,7 @@
 
     const nextSrcAbs = toAbsoluteUrl(normalized.audioUrl);
     const currentSrcAbs = toAbsoluteUrl(audio.src);
-    if (nextSrcAbs !== currentSrcAbs) {
-      audio.src = normalized.audioUrl;
-      audio.load();
-    }
+    const sourceChanged = nextSrcAbs !== currentSrcAbs;
 
     const finalizePlaybackStart = () => {
       if (restoreTime > 0) {
@@ -402,23 +439,36 @@
         audio.currentTime = clamp(restoreTime, 0, duration, 0);
       }
 
-      updateProgress();
-
       if (autoplay) {
         attemptPlay();
       } else {
         audio.pause();
         updatePlayPauseButton();
-        updateStatus("Ready in PlayerBar.");
+        updateStatus("Ready.");
         schedulePersist();
       }
     };
+
+    if (sourceChanged) {
+      audio.src = normalized.audioUrl;
+      audio.load();
+    }
 
     if (audio.readyState >= 1) {
       finalizePlaybackStart();
     } else {
       audio.addEventListener("loadedmetadata", finalizePlaybackStart, { once: true });
     }
+  }
+
+  function pauseDetailAudios(except) {
+    document.querySelectorAll(".js-detail-audio").forEach((detailAudio) => {
+      if (!(detailAudio instanceof HTMLAudioElement)) return;
+      if (detailAudio === except) return;
+      if (!detailAudio.paused) {
+        detailAudio.pause();
+      }
+    });
   }
 
   function trackFromTrigger(trigger) {
@@ -430,6 +480,7 @@
       audioUrl: trigger.dataset.audioUrl,
       sourceType: trigger.dataset.sourceType,
       trackUrl: trigger.dataset.trackUrl,
+      isLiked: trigger.dataset.isLiked,
     });
   }
 
@@ -488,33 +539,18 @@
     refs.next.addEventListener("click", () => moveHistory(1));
   }
 
-  if (refs.progress) {
-    refs.progress.addEventListener("input", () => {
-      const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-      if (!duration) return;
-
-      const nextTime = (Number(refs.progress.value) / 1000) * duration;
-      audio.currentTime = clamp(nextTime, 0, duration, 0);
-      updateProgress();
-      schedulePersist();
+  if (refs.like) {
+    refs.like.addEventListener("click", () => {
+      toggleCurrentTrackLike();
     });
   }
 
-  if (refs.volume) {
-    refs.volume.addEventListener("input", () => {
-      audio.volume = clamp(Number(refs.volume.value), 0, 1, 1);
-      schedulePersist();
-    });
-  }
-
-  audio.addEventListener("timeupdate", () => {
-    updateProgress();
-    schedulePersist();
-  });
+  audio.addEventListener("timeupdate", schedulePersist);
 
   audio.addEventListener("play", () => {
+    pauseDetailAudios(null);
     updatePlayPauseButton();
-    updateStatus("Playing from PlayerBar.", { active: true });
+    updateStatus("Playing.");
     schedulePersist();
   });
 
@@ -532,36 +568,44 @@
     schedulePersist();
   });
 
-  audio.addEventListener("volumechange", () => {
-    if (refs.volume) {
-      refs.volume.value = String(audio.volume);
-    }
-    schedulePersist();
-  });
-
-  audio.addEventListener("durationchange", updateProgress);
-  audio.addEventListener("loadedmetadata", updateProgress);
-
   audio.addEventListener("error", () => {
     updatePlayPauseButton();
-    updateStatus("Could not play this file.", { error: true });
+    updateStatus("Could not play this file.");
     schedulePersist();
   });
+
+  document.addEventListener(
+    "play",
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLAudioElement) || !target.classList.contains("js-detail-audio")) {
+        return;
+      }
+      if (!audio.paused) {
+        audio.pause();
+      }
+      pauseDetailAudios(target);
+    },
+    true
+  );
 
   window.addEventListener("pagehide", persistStateNow);
   window.addEventListener("beforeunload", persistStateNow);
+
+  window.addEventListener("qazsound:navigation:render", () => {
+    refreshPlayTriggers();
+    updateLikeButton();
+    if (playbackState.trackId) {
+      updateTrackMeta();
+    }
+  });
 
   readHistory();
   updateHistoryButtons();
 
   const savedState = readSavedState();
-  if (refs.volume) {
-    const initialVolume = savedState ? savedState.volume : clamp(Number(refs.volume.value), 0, 1, 1);
-    refs.volume.value = String(initialVolume);
-    audio.volume = initialVolume;
-  }
-
   if (savedState) {
+    audio.volume = savedState.volume;
     setPlayerBarVisible(true);
     applyTrack(savedState, {
       autoplay: false,
@@ -587,8 +631,8 @@
   } else {
     setPlayerBarVisible(false);
     setPlaybackControlsEnabled(false);
-    updateProgress();
     updatePlayPauseButton();
+    updateLikeButton();
     updateStatus("Choose any track to start playback.");
     persistStateNow();
   }

@@ -211,13 +211,15 @@ input[type="file"] {
 }
 
 .track-grid--featured {
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .track-card {
   overflow: hidden;
   border-radius: 22px;
   transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+  contain: layout paint;
+  will-change: transform;
 }
 
 .track-card:hover {
@@ -229,7 +231,7 @@ input[type="file"] {
 .track-card-cover-wrap {
   display: block;
   position: relative;
-  padding: 0.8rem 0.8rem 0;
+  padding: 0.68rem 0.68rem 0;
 }
 
 .track-card-cover {
@@ -258,13 +260,13 @@ input[type="file"] {
 }
 
 .track-card-body {
-  padding: 0.9rem;
+  padding: 0.78rem;
   display: grid;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
 .track-card-title {
-  font-size: 1.02rem;
+  font-size: clamp(0.86rem, 2.9vw, 1.02rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -275,7 +277,10 @@ input[type="file"] {
 }
 
 .track-card-artist {
-  font-size: 0.92rem;
+  font-size: clamp(0.76rem, 2.4vw, 0.92rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .track-card-footer {
@@ -578,6 +583,7 @@ input[type="file"] {
   opacity: 0;
   pointer-events: none;
   transition: transform 0.24s ease, opacity 0.24s ease;
+  will-change: transform;
 }
 
 .playerbar.is-visible {
@@ -587,142 +593,60 @@ input[type="file"] {
 }
 
 .playerbar-inner {
-  padding: 0.62rem 0;
+  padding: 0.52rem 0 calc(0.52rem + env(safe-area-inset-bottom));
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 0.62rem;
 }
 
 .player-track {
   display: grid;
-  grid-template-columns: 48px 1fr;
+  grid-template-columns: 42px minmax(0, 1fr);
   gap: 0.62rem;
   align-items: center;
   min-width: 0;
 }
 
 .player-cover {
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   border-radius: 10px;
   object-fit: cover;
   border: 1px solid rgba(255, 255, 255, 0.13);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.32);
 }
 
-.player-meta {
-  min-width: 0;
-}
-
 .player-title {
   color: #fff;
-  font-size: 0.92rem;
+  font-size: clamp(0.84rem, 2.5vw, 0.96rem);
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.player-artist,
-.player-status {
-  font-size: 0.76rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.player-status {
-  min-height: 1.1em;
-}
-
-.player-status.has-alert {
-  color: #ffb9c3;
-}
-
-.player-status.is-active::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  margin-right: 0.36rem;
-  display: inline-block;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 0 rgba(57, 208, 255, 0.6);
-  animation: playerPulse 1.8s ease-in-out infinite;
-  vertical-align: middle;
-}
-
-@keyframes playerPulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(57, 208, 255, 0.6);
-  }
-  100% {
-    box-shadow: 0 0 0 9px rgba(57, 208, 255, 0);
-  }
-}
-
-.player-center {
-  display: grid;
-  gap: 0.46rem;
-}
-
 .player-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 0.4rem;
 }
 
 .player-btn {
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
 }
 
 .player-btn-main {
-  min-width: 40px;
+  width: 38px;
+  height: 38px;
+}
+
+.player-like-btn {
+  width: 34px;
   height: 34px;
-}
-
-.player-progress-row {
-  display: grid;
-  grid-template-columns: 42px 1fr 42px;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.player-time {
-  color: var(--muted);
-  font-size: 0.74rem;
-  text-align: center;
-}
-
-.player-progress,
-.player-volume {
-  accent-color: var(--accent);
-}
-
-.player-progress {
-  width: 100%;
-}
-
-.player-side {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  justify-content: space-between;
-}
-
-.player-volume-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-}
-
-.player-volume {
-  width: 86px;
-}
-
-.player-open-link {
-  white-space: nowrap;
 }
 
 .playerbar .icon-btn:disabled,
@@ -731,12 +655,6 @@ input[type="file"] {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
-}
-
-@media (min-width: 520px) {
-  .track-grid--featured {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 760px) {
@@ -787,16 +705,52 @@ input[type="file"] {
     font-size: 0.74rem;
   }
 
+  .track-grid {
+    gap: 0.75rem;
+  }
+
+  .track-card-cover-wrap {
+    padding: 0.58rem 0.58rem 0;
+  }
+
+  .track-card-body {
+    padding: 0.65rem;
+    gap: 0.46rem;
+  }
+
+  .track-card-footer {
+    gap: 0.45rem;
+  }
+
   .playerbar-inner {
-    padding-bottom: calc(0.62rem + env(safe-area-inset-bottom));
+    gap: 0.48rem;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .player-side {
-    flex-wrap: wrap;
+  .player-track {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 0.5rem;
   }
 
-  .player-open-link {
-    margin-left: auto;
+  .player-cover {
+    width: 36px;
+    height: 36px;
+  }
+
+  .player-controls {
+    gap: 0.28rem;
+  }
+
+  .player-btn,
+  .player-like-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+
+  .player-btn-main {
+    width: 34px;
+    height: 34px;
   }
 }
 
@@ -822,21 +776,12 @@ input[type="file"] {
     margin: 1.1rem 0 0.7rem;
   }
 
-  .player-controls {
-    gap: 0.28rem;
+  .track-grid {
+    gap: 0.65rem;
   }
 
-  .player-progress-row {
-    grid-template-columns: 38px 1fr 38px;
-    gap: 0.35rem;
-  }
-
-  .player-time {
-    font-size: 0.7rem;
-  }
-
-  .player-volume {
-    width: 78px;
+  .playerbar-inner {
+    padding: 0.42rem 0 calc(0.42rem + env(safe-area-inset-bottom));
   }
 }
 
@@ -859,19 +804,7 @@ input[type="file"] {
   }
 
   .playerbar-inner {
-    grid-template-columns: minmax(220px, 310px) minmax(220px, 1fr) auto;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.7rem 0;
-  }
-
-  .player-side {
-    justify-content: flex-end;
-    min-width: 180px;
-  }
-
-  .player-volume {
-    width: 120px;
+    padding: 0.48rem 0 calc(0.48rem + env(safe-area-inset-bottom));
   }
 
   .settings-layout {
@@ -880,8 +813,14 @@ input[type="file"] {
   }
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1024px) {
   .track-grid--featured {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1480px) {
+  .track-grid--featured {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }

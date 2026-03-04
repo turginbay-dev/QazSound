@@ -3,7 +3,6 @@
 {% block title %}{{ track.title }} | QazSound{% endblock %}
 
 {% block content %}
-{% url 'tracks:track_detail' track.id as track_url %}
 <section class="card track-detail">
   <img src="{{ track.cover_url }}" alt="{{ track.title }} cover" class="track-detail-cover" />
 
@@ -24,52 +23,16 @@
       {% endfor %}
     </div>
 
-    <button
-      type="button"
-      class="btn btn-primary track-detail-play js-player-play"
-      aria-label="Play {{ track.title }}"
-      data-track-id="{{ track.id }}"
-      data-title="{{ track.title }}"
-      data-artist="{{ track.artist.name }}"
-      data-cover-url="{{ track.cover_url }}"
-      data-audio-url="{{ track.audio_url }}"
-      data-source-type="{{ track.source_type }}"
-      data-track-url="{{ track_url }}"
-    >
-      Play In PlayerBar
-    </button>
-
-    {% if track.audio_file %}
+    {% if track.audio_url %}
       <div class="global-player-note card panel-space">
-        <p class="muted">
-          {% if request.LANGUAGE_CODE == 'ru' %}
-            Воспроизведение управляется глобальным плеером внизу страницы.
-          {% else %}
-            Ойнату беттің төменгі жағындағы global player арқылы басқарылады.
-          {% endif %}
-        </p>
-        {% if track.source_type == 'YOUTUBE' and track.youtube_url %}
-          <p class="muted">
-            Source: <a href="{{ track.youtube_url }}" target="_blank" rel="noopener noreferrer">YouTube link</a>
-          </p>
-        {% endif %}
+        <audio
+          class="audio-player js-detail-audio"
+          controls
+          preload="metadata"
+          src="{{ track.audio_url }}"
+          {% if track.source_type == 'YOUTUBE' %}crossorigin="anonymous"{% endif %}
+        ></audio>
       </div>
-    {% elif track.source_type == 'YOUTUBE' and track.youtube_id %}
-      <div class="youtube-embed-wrap">
-        <iframe
-          src="{{ track.embed_url }}"
-          title="{{ track.title }}"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-          loading="lazy"
-        ></iframe>
-      </div>
-      <p class="muted youtube-fallback">
-        If video doesn't play, open on YouTube:
-        <a href="{{ track.youtube_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
-          Watch on YouTube
-        </a>
-      </p>
     {% else %}
       <p class="muted">No playable source is available for this track.</p>
     {% endif %}

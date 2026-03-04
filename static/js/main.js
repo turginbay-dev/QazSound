@@ -1,5 +1,6 @@
 (function () {
   const AUTO_DISMISS_MS = 3800;
+  const initializedToasts = new WeakSet();
 
   function closeToast(toast) {
     if (!toast) return;
@@ -8,12 +9,21 @@
     setTimeout(() => toast.remove(), 180);
   }
 
-  document.querySelectorAll("[data-toast]").forEach((toast) => {
-    const closeBtn = toast.querySelector("[data-toast-close]");
-    if (closeBtn) {
-      closeBtn.addEventListener("click", () => closeToast(toast));
-    }
+  function initToasts(root) {
+    (root || document).querySelectorAll("[data-toast]").forEach((toast) => {
+      if (initializedToasts.has(toast)) return;
+      initializedToasts.add(toast);
+      window.setTimeout(() => closeToast(toast), AUTO_DISMISS_MS);
+    });
+  }
 
-    window.setTimeout(() => closeToast(toast), AUTO_DISMISS_MS);
+  document.addEventListener("click", (event) => {
+    const closeBtn = event.target.closest("[data-toast-close]");
+    if (!closeBtn) return;
+    const toast = closeBtn.closest("[data-toast]");
+    closeToast(toast);
   });
+
+  initToasts(document);
+  window.addEventListener("qazsound:navigation:render", () => initToasts(document));
 })();
