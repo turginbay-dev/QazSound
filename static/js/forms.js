@@ -2,11 +2,23 @@
   const SOURCE_UPLOAD = "UPLOAD";
   const SOURCE_YOUTUBE = "YOUTUBE";
 
+  function setUploadStatus(form, message, isError) {
+    const status = form.querySelector(".js-upload-status");
+    if (!status) return;
+    status.textContent = message || "";
+    status.style.color = isError ? "#ffb2bc" : "";
+  }
+
   function setYoutubeStatus(form, message, isError) {
     const status = form.querySelector(".js-youtube-status");
     if (!status) return;
     status.textContent = message || "";
     status.style.color = isError ? "#ffb2bc" : "";
+  }
+
+  function getCsrfToken(form) {
+    const tokenField = form.querySelector('input[name="csrfmiddlewaretoken"]');
+    return tokenField ? tokenField.value : "";
   }
 
   function toggleSourceSections(form) {
@@ -20,6 +32,60 @@
     form.querySelectorAll(".js-youtube-only").forEach((el) => {
       el.classList.toggle("is-hidden", sourceType !== SOURCE_YOUTUBE);
     });
+
+    if (sourceType !== SOURCE_UPLOAD) {
+      setUploadStatus(form, "", false);
+    }
+  }
+
+  async function fetchUploadMetadata(form, file) {
+    const endpoint = form.dataset.uploadMetadataUrl;
+    const titleField = form.querySelector('input[name="title"]');
+    const artistField = form.querySelector('input[name="artist_name"]');
+    const durationField = form.querySelector('input[name="duration_seconds"]');
+
+    if (!endpoint || !file) return;
+
+    const formData = new FormData();
+    formData.append("audio_file", file);
+
+    setUploadStatus(form, "Reading audio metadata...", false);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          Accept: "application/json",
+          "X-CSRFToken": getCsrfToken(form),
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Could not read audio metadata.");
+      }
+
+      if (titleField && !titleField.value.trim() && data.title) {
+        titleField.value = data.title;
+      }
+      if (artistField && !artistField.value.trim() && data.artist_name) {
+        artistField.value = data.artist_name;
+      }
+      if (durationField && !durationField.value.trim() && Number.isFinite(Number(data.duration_seconds))) {
+        durationField.value = String(Math.max(0, Number(data.duration_seconds)));
+      }
+
+      if (data.title || data.artist_name || data.duration_seconds) {
+        setUploadStatus(form, "Metadata loaded from the selected audio file.", false);
+      } else {
+        setUploadStatus(form, "File selected. Fill title and artist manually if needed.", false);
+      }
+    } catch (error) {
+      setUploadStatus(form, error.message || "Could not read audio metadata.", true);
+    }
   }
 
   async function fetchYoutubeMetadata(form) {
@@ -106,7 +172,7 @@
     }
 
     if (!errors.length) {
-      return;
+      return true;
     }
 
     event.preventDefault();
@@ -115,6 +181,30 @@
       wrapper.className = "form-error";
       wrapper.textContent = errors.join(" ");
       errorBox.appendChild(wrapper);
+    }
+    return false;
+  }
+
+  function setSubmittingState(form) {
+    const submitButton = form.querySelector(".js-track-submit");
+    if (!submitButton) return;
+
+    const submitLabel = submitButton.querySelector(".js-submit-label");
+    const submitSpinner = submitButton.querySelector(".btn-spinner");
+    const sourceField = form.querySelector('select[name="source_type"]');
+    const sourceType = sourceField ? sourceField.value : SOURCE_UPLOAD;
+
+    submitButton.disabled = true;
+    submitButton.classList.add("is-loading");
+    if (submitSpinner) {
+      submitSpinner.classList.remove("is-hidden");
+    }
+    if (submitLabel) {
+      submitLabel.textContent = sourceType === SOURCE_UPLOAD ? "Uploading..." : "Publishing...";
+    }
+
+    if (sourceType === SOURCE_UPLOAD) {
+      setUploadStatus(form, "Uploading track and processing media...", false);
     }
   }
 
@@ -132,6 +222,21 @@
     toggleSourceSections(form);
   });
 
+  document.addEventListener("change", (event) => {
+    const audioField = event.target.closest('.js-track-form input[name="audio_file"]');
+    if (!audioField) return;
+
+    const form = audioField.closest(".js-track-form");
+    if (!form) return;
+
+    const file = audioField.files && audioField.files[0];
+    if (!file) {
+      setUploadStatus(form, "", false);
+      return;
+    }
+    fetchUploadMetadata(form, file);
+  });
+
   document.addEventListener("click", (event) => {
     const fetchButton = event.target.closest(".js-youtube-fetch");
     if (!fetchButton) return;
@@ -146,7 +251,10 @@
     if (!(form instanceof HTMLFormElement) || !form.classList.contains("js-track-form")) {
       return;
     }
-    validateTrackForm(form, event);
+    if (!validateTrackForm(form, event)) {
+      return;
+    }
+    setSubmittingState(form);
   });
 
   initTrackForms(document);

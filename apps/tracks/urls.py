@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("tracks/", views.track_list, name="track_list"),
     path("tracks/add/", views.track_create, name="track_create"),
+    path("tracks/upload/metadata/", views.upload_audio_metadata_preview, name="upload_audio_metadata_preview"),
     path("tracks/youtube/metadata/", views.youtube_metadata_preview, name="youtube_metadata_preview"),
     path("tracks/<int:track_id>/stream/", views.youtube_audio_stream, name="youtube_audio_stream"),
     path("tracks/<int:track_id>/", views.track_detail, name="track_detail"),

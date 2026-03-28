@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 
 from .models import Track
 from .services import fetch_youtube_metadata, is_valid_youtube_url
+from .upload_processing import extract_audio_upload_metadata, optimize_cover_upload
 from .utils import extract_youtube_id, normalize_youtube_url
 
 
@@ -58,6 +59,7 @@ class TrackForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.youtube_metadata = {}
         self.youtube_id = None
+        self.upload_metadata = {}
 
         if self.instance and self.instance.pk and self.instance.artist_id:
             self.fields["artist_name"].initial = self.instance.artist.name
@@ -66,6 +68,8 @@ class TrackForm(forms.ModelForm):
         self.fields["audio_file"].required = False
         self.fields["youtube_url"].required = False
         self.fields["external_cover_url"].required = False
+        self.fields["audio_file"].widget.attrs["accept"] = ".mp3,.wav,.ogg,audio/*"
+        self.fields["cover"].widget.attrs["accept"] = "image/*"
 
         for field in self.fields.values():
             css_class = "form-input"
@@ -99,6 +103,7 @@ class TrackForm(forms.ModelForm):
     def clean_audio_file(self):
         audio = self.cleaned_data.get("audio_file")
         if not audio:
+            self.upload_metadata = {}
             return audio
 
         ext = Path(audio.name).suffix.lower()
@@ -111,6 +116,8 @@ class TrackForm(forms.ModelForm):
 
         if audio.size > MAX_AUDIO_SIZE:
             raise ValidationError("Audio file must be 30MB or smaller.")
+
+        self.upload_metadata = extract_audio_upload_metadata(audio)
         return audio
 
     def clean_cover(self):
@@ -128,7 +135,10 @@ class TrackForm(forms.ModelForm):
 
         if cover.size > MAX_IMAGE_SIZE:
             raise ValidationError("Cover image must be 5MB or smaller.")
-        return cover
+        optimized_cover = optimize_cover_upload(cover)
+        if optimized_cover.size > MAX_IMAGE_SIZE:
+            raise ValidationError("Optimized cover image must be 5MB or smaller.")
+        return optimized_cover
 
     def clean(self):
         cleaned_data = super().clean()
@@ -143,6 +153,19 @@ class TrackForm(forms.ModelForm):
         existing_audio = bool(self.instance and self.instance.pk and self.instance.audio_file)
 
         if source_type == Track.SourceType.UPLOAD:
+            upload_metadata = self.upload_metadata or {}
+
+            if not title and upload_metadata.get("title"):
+                title = upload_metadata["title"].strip()
+                cleaned_data["title"] = title
+
+            if not artist_name and upload_metadata.get("artist_name"):
+                artist_name = upload_metadata["artist_name"].strip()
+                cleaned_data["artist_name"] = artist_name
+
+            if not cleaned_data.get("duration_seconds") and upload_metadata.get("duration_seconds"):
+                cleaned_data["duration_seconds"] = upload_metadata["duration_seconds"]
+
             if not audio_file and not existing_audio:
                 self.add_error("audio_file", "Audio file is required for upload source.")
 

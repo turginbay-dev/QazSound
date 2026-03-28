@@ -53,6 +53,10 @@
 }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
   border: 1px solid transparent;
   color: #fff;
   padding: 0.64rem 1rem;
@@ -66,6 +70,21 @@
 
 .btn:hover {
   transform: translateY(-1px);
+}
+
+.btn.is-loading {
+  cursor: wait;
+  opacity: 0.9;
+  transform: none;
+}
+
+.btn-spinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: #fff;
+  animation: btn-spin 0.75s linear infinite;
 }
 
 .btn-primary {
@@ -161,6 +180,12 @@ input[type="file"] {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.5rem;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .field-error,

@@ -19,6 +19,7 @@
     class="form-grid js-track-form"
     data-require-audio="{% if is_create %}true{% else %}false{% endif %}"
     data-youtube-metadata-url="{% url 'tracks:youtube_metadata_preview' %}"
+    data-upload-metadata-url="{% url 'tracks:upload_audio_metadata_preview' %}"
   >
     {% csrf_token %}
 
@@ -47,6 +48,9 @@
     <div class="field js-upload-only">
       <label for="{{ form.audio_file.id_for_label }}">Audio file</label>
       {{ form.audio_file }}
+      <small class="muted js-upload-status" aria-live="polite">
+        Choose an audio file to auto-fill title, artist, and duration.
+      </small>
       {% if form.audio_file.errors %}<div class="field-error">{{ form.audio_file.errors }}</div>{% endif %}
     </div>
 
@@ -95,7 +99,10 @@
     <div class="field-full" id="client-form-errors"></div>
 
     <div class="button-row field-full">
-      <button type="submit" class="btn btn-primary">{% if is_create %}Publish{% else %}Save Changes{% endif %}</button>
+      <button type="submit" class="btn btn-primary js-track-submit">
+        <span class="btn-spinner is-hidden" aria-hidden="true"></span>
+        <span class="js-submit-label">{% if is_create %}Publish{% else %}Save Changes{% endif %}</span>
+      </button>
       <a href="{% if track %}{% url 'tracks:track_detail' track.id %}{% else %}{% url 'tracks:home' %}{% endif %}" class="btn btn-secondary">Cancel</a>
     </div>
   </form>

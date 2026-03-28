@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.interactions.selectors import get_liked_track_ids
 
@@ -24,6 +24,7 @@ from .services import (
     is_valid_youtube_url,
     update_track,
 )
+from .upload_processing import extract_audio_upload_metadata
 
 
 def _collect_liked_track_ids(request, tracks: list[Track] | tuple[Track, ...]) -> set[int]:
@@ -155,6 +156,23 @@ def track_edit(request, track_id: int):
         form = TrackForm(instance=track)
 
     return render(request, "tracks/track_form.html", {"form": form, "track": track, "is_create": False})
+
+
+@login_required
+@require_POST
+def upload_audio_metadata_preview(request):
+    audio_file = request.FILES.get("audio_file")
+    if not audio_file:
+        return JsonResponse({"detail": "Audio file is required."}, status=400)
+
+    metadata = extract_audio_upload_metadata(audio_file)
+    return JsonResponse(
+        {
+            "title": metadata.get("title", ""),
+            "artist_name": metadata.get("artist_name", ""),
+            "duration_seconds": metadata.get("duration_seconds"),
+        }
+    )
 
 
 @login_required
