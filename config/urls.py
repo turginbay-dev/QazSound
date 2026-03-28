@@ -16,7 +16,7 @@ urlpatterns = [
     path("api/", include("apps.tracks.api")),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG and getattr(settings, "SERVE_LOCAL_MEDIA", False):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 

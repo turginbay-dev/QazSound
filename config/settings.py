@@ -1,6 +1,10 @@
-from pathlib import Path
-import os
 import importlib.util
+import json
+import os
+from datetime import timedelta
+from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 from dotenv import load_dotenv
 
@@ -8,6 +12,11 @@ try:
     import dj_database_url
 except ImportError:  # pragma: no cover - optional for local bootstrap before pip install
     dj_database_url = None
+
+try:
+    from google.oauth2 import service_account
+except ImportError:  # pragma: no cover - optional until Firebase/GCS media storage is enabled
+    service_account = None
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,10 +46,47 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_str(name: str, default: str = "") -> str:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip()
+
+
+def _build_firebase_credentials(base_dir: Path):
+    credentials_json = _env_str("FIREBASE_CREDENTIALS_JSON")
+    credentials_path = _env_str("FIREBASE_CREDENTIALS_PATH")
+
+    if not credentials_json and not credentials_path:
+        return None
+
+    if service_account is None:
+        raise ImproperlyConfigured(
+            "Firebase storage credentials were provided, but google-auth is not installed. "
+            "Run `pip install -r requirements.txt`."
+        )
+
+    if credentials_json:
+        try:
+            payload = json.loads(credentials_json)
+        except json.JSONDecodeError as exc:
+            raise ImproperlyConfigured("FIREBASE_CREDENTIALS_JSON must contain valid JSON.") from exc
+        return service_account.Credentials.from_service_account_info(payload)
+
+    credentials_file = Path(credentials_path)
+    if not credentials_file.is_absolute():
+        credentials_file = base_dir / credentials_file
+    if not credentials_file.exists():
+        raise ImproperlyConfigured(f"Firebase credentials file was not found: {credentials_file}")
+    return service_account.Credentials.from_service_account_file(credentials_file)
+
+
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-secret-key")
 DEBUG = _env_bool("DEBUG", default=True)
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if host.strip()]
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+DATABASE_URL = _env_str("DATABASE_URL")
+FIREBASE_STORAGE_BUCKET = _env_str("FIREBASE_STORAGE_BUCKET")
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
@@ -61,6 +107,14 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.interactions",
 ]
+
+if FIREBASE_STORAGE_BUCKET:
+    if importlib.util.find_spec("storages") is None:
+        raise ImproperlyConfigured(
+            "FIREBASE_STORAGE_BUCKET is set, but django-storages is not installed. "
+            "Run `pip install -r requirements.txt`."
+        )
+    INSTALLED_APPS.append("storages")
 
 if importlib.util.find_spec("jazzmin") is not None:
     INSTALLED_APPS.insert(0, "jazzmin")
@@ -108,8 +162,12 @@ DATABASES = {
     }
 }
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL and dj_database_url is not None:
+if DATABASE_URL:
+    if dj_database_url is None:
+        raise ImproperlyConfigured(
+            "DATABASE_URL is set, but dj-database-url is not installed. "
+            "Run `pip install -r requirements.txt`."
+        )
     DATABASES["default"] = dj_database_url.parse(
         DATABASE_URL,
         conn_max_age=_env_int("DB_CONN_MAX_AGE", default=600),
@@ -148,6 +206,29 @@ STORAGES = {
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+SERVE_LOCAL_MEDIA = True
+
+if FIREBASE_STORAGE_BUCKET:
+    firebase_media_location = _env_str("FIREBASE_MEDIA_LOCATION", "media").strip("/")
+    firebase_storage_options = {
+        "bucket_name": FIREBASE_STORAGE_BUCKET,
+        "project_id": _env_str("FIREBASE_PROJECT_ID") or None,
+        "credentials": _build_firebase_credentials(BASE_DIR),
+        "location": firebase_media_location,
+        "default_acl": None,
+        "file_overwrite": _env_bool("FIREBASE_FILE_OVERWRITE", default=False),
+        "querystring_auth": _env_bool("FIREBASE_QUERYSTRING_AUTH", default=True),
+        "expiration": timedelta(seconds=_env_int("FIREBASE_URL_EXPIRATION_SECONDS", default=86400)),
+    }
+    blob_chunk_size = _env_int("FIREBASE_BLOB_CHUNK_SIZE", default=0)
+    if blob_chunk_size > 0:
+        firebase_storage_options["blob_chunk_size"] = blob_chunk_size
+
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+        "OPTIONS": {key: value for key, value in firebase_storage_options.items() if value is not None},
+    }
+    SERVE_LOCAL_MEDIA = False
 ENABLE_YTDLP_YOUTUBE_STREAM = _env_bool("ENABLE_YTDLP_YOUTUBE_STREAM", default=True)
 YTDLP_STREAM_FORMAT = os.getenv("YTDLP_STREAM_FORMAT", "bestaudio/best")
 YTDLP_REQUEST_TIMEOUT_SECONDS = _env_int("YTDLP_REQUEST_TIMEOUT_SECONDS", default=12)

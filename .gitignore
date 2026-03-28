@@ -7,3 +7,6 @@ media/
 yt_music/
 .DS_Store
 staticfiles/
+firebase-service-account*.json
+service-account*.json
+*.firebase-adminsdk-*.json

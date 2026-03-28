@@ -310,6 +310,17 @@ ALLOWED_HOSTS=127.0.0.1,localhost
 ENABLE_YTDLP_YOUTUBE_STREAM=True
 ```
 
+For PostgreSQL + Firebase media storage:
+
+```env
+DATABASE_URL=postgresql://postgres:change-me@localhost:5432/qazsound
+FIREBASE_STORAGE_BUCKET=your-bucket-name
+FIREBASE_PROJECT_ID=your-gcp-project-id
+FIREBASE_CREDENTIALS_PATH=firebase-service-account.json
+FIREBASE_MEDIA_LOCATION=media
+FIREBASE_QUERYSTRING_AUTH=True
+```
+
 ### 5. Apply migrations
 
 ```bash
@@ -352,6 +363,15 @@ python manage.py test
 | `CSRF_TRUSTED_ORIGINS` | Trusted origins for CSRF-protected requests. |
 | `DATABASE_URL` | Enables PostgreSQL/other DB connection via URL. |
 | `DB_CONN_MAX_AGE` | DB persistent connection tuning. |
+| `FIREBASE_STORAGE_BUCKET` | Google Cloud Storage bucket used by Firebase Storage for uploaded media. |
+| `FIREBASE_PROJECT_ID` | Optional Google Cloud/Firebase project id for the storage client. |
+| `FIREBASE_CREDENTIALS_PATH` | Relative or absolute path to a Firebase service account JSON file. |
+| `FIREBASE_CREDENTIALS_JSON` | Inline Firebase service account JSON for platforms that only support env vars. |
+| `FIREBASE_MEDIA_LOCATION` | Bucket subfolder prefix for uploaded media files. |
+| `FIREBASE_QUERYSTRING_AUTH` | Sign media URLs for private buckets; set `False` only for public media buckets. |
+| `FIREBASE_URL_EXPIRATION_SECONDS` | Signed media URL lifetime in seconds. |
+| `FIREBASE_FILE_OVERWRITE` | Keep unique filenames in storage when set to `False`. |
+| `FIREBASE_BLOB_CHUNK_SIZE` | Optional resumable upload chunk size in bytes for large audio files. |
 | `SECURE_SSL_REDIRECT` | Force HTTPS redirection in production. |
 | `SESSION_COOKIE_SECURE` | Secure-only session cookies. |
 | `CSRF_COOKIE_SECURE` | Secure-only CSRF cookies. |
@@ -858,6 +878,17 @@ ALLOWED_HOSTS=127.0.0.1,localhost
 ENABLE_YTDLP_YOUTUBE_STREAM=True
 ```
 
+PostgreSQL + Firebase media сақтау үшін:
+
+```env
+DATABASE_URL=postgresql://postgres:change-me@localhost:5432/qazsound
+FIREBASE_STORAGE_BUCKET=your-bucket-name
+FIREBASE_PROJECT_ID=your-gcp-project-id
+FIREBASE_CREDENTIALS_PATH=firebase-service-account.json
+FIREBASE_MEDIA_LOCATION=media
+FIREBASE_QUERYSTRING_AUTH=True
+```
+
 ### 5-қадам: Миграцияларды орындау
 
 ```bash
@@ -900,6 +931,15 @@ python manage.py test
 | `CSRF_TRUSTED_ORIGINS` | CSRF trusted origin тізімі |
 | `DATABASE_URL` | PostgreSQL/басқа ДҚ URL қосу |
 | `DB_CONN_MAX_AGE` | ДҚ қосылымының өмірлік уақыты |
+| `FIREBASE_STORAGE_BUCKET` | Firebase Storage қолданатын bucket атауы |
+| `FIREBASE_PROJECT_ID` | Google Cloud/Firebase project id (қосымша) |
+| `FIREBASE_CREDENTIALS_PATH` | Firebase service account JSON файлына жол |
+| `FIREBASE_CREDENTIALS_JSON` | Тек env қолдайтын орта үшін inline JSON |
+| `FIREBASE_MEDIA_LOCATION` | Bucket ішіндегі media папкасының префиксі |
+| `FIREBASE_QUERYSTRING_AUTH` | Private bucket үшін signed URL қосу/өшіру |
+| `FIREBASE_URL_EXPIRATION_SECONDS` | Signed URL жарамдылық уақыты |
+| `FIREBASE_FILE_OVERWRITE` | `False` болса файл аттарын үстінен жазбайды |
+| `FIREBASE_BLOB_CHUNK_SIZE` | Үлкен аудио upload үшін chunk өлшемі |
 | `SECURE_SSL_REDIRECT` | HTTPS-ке мәжбүрлі redirect |
 | `SESSION_COOKIE_SECURE` | Session cookie тек HTTPS |
 | `CSRF_COOKIE_SECURE` | CSRF cookie тек HTTPS |
