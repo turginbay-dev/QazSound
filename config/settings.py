@@ -233,17 +233,17 @@ if FIREBASE_STORAGE_BUCKET:
         "OPTIONS": {key: value for key, value in firebase_storage_options.items() if value is not None},
     }
     SERVE_LOCAL_MEDIA = False
+if _env_bool("DIAG_FIREBASE_BOOT", default=False):
     raise ImproperlyConfigured(
-     "QAZ DIAG | "
-     f"backend={STORAGES['default']['BACKEND']} | "
-     f"bucket={FIREBASE_STORAGE_BUCKET or '-'} | "
-     f"serve_local={SERVE_LOCAL_MEDIA} | "
-     f"project={_env_str('FIREBASE_PROJECT_ID') or '-'} | "
-     f"has_json={'yes' if _env_str('FIREBASE_CREDENTIALS_JSON') else 'no'} | "
-     f"has_path={'yes' if _env_str('FIREBASE_CREDENTIALS_PATH') else 'no'} | "
-     f"debug={DEBUG}"
-)
-
+        "QAZ DIAG | "
+        f"backend={STORAGES['default']['BACKEND']} | "
+        f"bucket={FIREBASE_STORAGE_BUCKET or '-'} | "
+        f"serve_local={SERVE_LOCAL_MEDIA} | "
+        f"project={_env_str('FIREBASE_PROJECT_ID') or '-'} | "
+        f"has_json={'yes' if _env_str('FIREBASE_CREDENTIALS_JSON') else 'no'} | "
+        f"has_path={'yes' if _env_str('FIREBASE_CREDENTIALS_PATH') else 'no'} | "
+        f"debug={DEBUG}"
+    )
 if ENABLE_STORAGE_STARTUP_LOGS:
     print(
         "[QazSound storage] "
