@@ -179,21 +179,10 @@
   function validateTrackForm(form, event) {
     const errors = [];
     const sourceField = form.querySelector('select[name="source_type"]');
-    const titleField = form.querySelector('input[name="title"]');
-    const artistField = form.querySelector('input[name="artist_name"]');
     const audioField = form.querySelector('input[name="audio_file"]');
     const youtubeField = form.querySelector('input[name="youtube_url"]');
     const sourceType = sourceField ? sourceField.value : SOURCE_UPLOAD;
     const requireAudio = form.dataset.requireAudio === "true";
-    const hasSelectedAudio = Boolean(audioField && audioField.files && audioField.files.length);
-
-    if (titleField && !titleField.value.trim() && !(sourceType === SOURCE_UPLOAD && hasSelectedAudio)) {
-      errors.push("Title is required.");
-    }
-
-    if (artistField && !artistField.value.trim() && !(sourceType === SOURCE_UPLOAD && hasSelectedAudio)) {
-      errors.push("Artist name is required.");
-    }
 
     if (sourceType === SOURCE_UPLOAD && requireAudio && audioField && !audioField.value) {
       errors.push("Audio file is required for upload source.");
