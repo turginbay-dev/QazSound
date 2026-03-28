@@ -21,6 +21,34 @@
     return tokenField ? tokenField.value : "";
   }
 
+  function collapseWhitespace(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function guessMetadataFromFilename(fileName) {
+    const baseName = collapseWhitespace(String(fileName || "").replace(/\.[^.]+$/, "").replace(/_/g, " "));
+    if (!baseName) {
+      return { title: "", artistName: "" };
+    }
+
+    const parts = baseName
+      .split(" - ")
+      .map((part) => collapseWhitespace(part.replace(/^[-\s]+|[-\s]+$/g, "")))
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      return {
+        artistName: parts[0],
+        title: parts.slice(1).join(" - "),
+      };
+    }
+
+    return {
+      artistName: "",
+      title: baseName,
+    };
+  }
+
   function toggleSourceSections(form) {
     const sourceField = form.querySelector('select[name="source_type"]');
     if (!sourceField) return;
@@ -48,6 +76,14 @@
 
     const formData = new FormData();
     formData.append("audio_file", file);
+
+    const guessed = guessMetadataFromFilename(file.name);
+    if (titleField && !titleField.value.trim() && guessed.title) {
+      titleField.value = guessed.title;
+    }
+    if (artistField && !artistField.value.trim() && guessed.artistName) {
+      artistField.value = guessed.artistName;
+    }
 
     setUploadStatus(form, "Reading audio metadata...", false);
 
@@ -149,12 +185,13 @@
     const youtubeField = form.querySelector('input[name="youtube_url"]');
     const sourceType = sourceField ? sourceField.value : SOURCE_UPLOAD;
     const requireAudio = form.dataset.requireAudio === "true";
+    const hasSelectedAudio = Boolean(audioField && audioField.files && audioField.files.length);
 
-    if (titleField && !titleField.value.trim()) {
+    if (titleField && !titleField.value.trim() && !(sourceType === SOURCE_UPLOAD && hasSelectedAudio)) {
       errors.push("Title is required.");
     }
 
-    if (artistField && !artistField.value.trim()) {
+    if (artistField && !artistField.value.trim() && !(sourceType === SOURCE_UPLOAD && hasSelectedAudio)) {
       errors.push("Artist name is required.");
     }
 
