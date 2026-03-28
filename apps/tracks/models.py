@@ -92,7 +92,7 @@ class Track(models.Model):
             except Exception:
                 pass
 
-        return f"{settings.STATIC_URL}img/placeholders/cover.jpg"
+        return f"{settings.STATIC_URL}img/placeholders/cover.svg"
 
     @property
     def audio_url(self) -> str:

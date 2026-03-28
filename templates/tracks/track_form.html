@@ -27,6 +27,14 @@
       <div class="form-error field-full">{{ form.non_field_errors }}</div>
     {% endif %}
 
+    {% if form.errors %}
+      <div class="form-error field-full">
+        Upload was not saved yet. Fix the highlighted fields below.
+        <br />
+        If the form reloads with errors, select the audio and cover files again before publishing.
+      </div>
+    {% endif %}
+
     <div class="field">
       <label for="{{ form.source_type.id_for_label }}">Source Type</label>
       {{ form.source_type }}
@@ -49,7 +57,7 @@
       <label for="{{ form.audio_file.id_for_label }}">Audio file</label>
       {{ form.audio_file }}
       <small class="muted js-upload-status" aria-live="polite">
-        Choose an audio file to auto-fill title, artist, and duration.
+        Choose an audio file to auto-fill title, artist, and duration. If artist metadata is missing, your account name is used.
       </small>
       {% if form.audio_file.errors %}<div class="field-error">{{ form.audio_file.errors }}</div>{% endif %}
     </div>

@@ -111,7 +111,7 @@ def _ensure_owner(request, track: Track):
 @login_required
 def track_create(request):
     if request.method == "POST":
-        form = TrackForm(request.POST, request.FILES)
+        form = TrackForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             try:
                 track = create_track(request.user, form)
@@ -124,7 +124,7 @@ def track_create(request):
         else:
             messages.error(request, "Please correct the errors and try again.")
     else:
-        form = TrackForm()
+        form = TrackForm(user=request.user)
 
     return render(request, "tracks/track_form.html", {"form": form, "is_create": True})
 
@@ -140,7 +140,7 @@ def track_edit(request, track_id: int):
         return redirect("tracks:track_detail", track_id=track.id)
 
     if request.method == "POST":
-        form = TrackForm(request.POST, request.FILES, instance=track)
+        form = TrackForm(request.POST, request.FILES, instance=track, user=request.user)
         if form.is_valid():
             try:
                 track = update_track(track, form)
@@ -153,7 +153,7 @@ def track_edit(request, track_id: int):
         else:
             messages.error(request, "Please correct the errors and try again.")
     else:
-        form = TrackForm(instance=track)
+        form = TrackForm(instance=track, user=request.user)
 
     return render(request, "tracks/track_form.html", {"form": form, "track": track, "is_create": False})
 

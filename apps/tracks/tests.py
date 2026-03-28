@@ -34,6 +34,25 @@ class TrackUploadFormTests(TestCase):
         self.assertEqual(form.cleaned_data["artist_name"], "Aibek")
         self.assertEqual(form.cleaned_data["title"], "Menin Ani")
 
+    def test_upload_form_defaults_artist_to_authenticated_username(self):
+        user = User.objects.create_user(username="upload_owner", password="StrongPass123!")
+        audio = SimpleUploadedFile("Menin Ani.mp3", b"fake-mp3-bytes", content_type="audio/mpeg")
+        form = TrackForm(
+            data={
+                "source_type": Track.SourceType.UPLOAD,
+                "title": "",
+                "description": "",
+                "artist_name": "",
+                "duration_seconds": "",
+            },
+            files={"audio_file": audio},
+            user=user,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["artist_name"], "upload_owner")
+        self.assertEqual(form.cleaned_data["title"], "Menin Ani")
+
     def test_cover_upload_is_resized_and_compressed(self):
         audio = SimpleUploadedFile("Artist - Track.mp3", b"fake-mp3-bytes", content_type="audio/mpeg")
         cover = build_test_image()

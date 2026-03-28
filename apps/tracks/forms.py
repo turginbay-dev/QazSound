@@ -55,7 +55,8 @@ class TrackForm(forms.ModelForm):
 
     youtube_metadata: dict
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
         super().__init__(*args, **kwargs)
         self.youtube_metadata = {}
         self.youtube_id = None
@@ -63,11 +64,16 @@ class TrackForm(forms.ModelForm):
 
         if self.instance and self.instance.pk and self.instance.artist_id:
             self.fields["artist_name"].initial = self.instance.artist.name
+        elif self.user and not self.fields["artist_name"].initial:
+            default_artist_name = self._default_artist_name()
+            if default_artist_name:
+                self.fields["artist_name"].initial = default_artist_name
 
         self.fields["title"].required = False
         self.fields["audio_file"].required = False
         self.fields["youtube_url"].required = False
         self.fields["external_cover_url"].required = False
+        self.fields["artist_name"].widget.attrs["placeholder"] = "Defaults to your account name"
         self.fields["audio_file"].widget.attrs["accept"] = ".mp3,.wav,.ogg,audio/*"
         self.fields["cover"].widget.attrs["accept"] = "image/*"
 
@@ -77,6 +83,17 @@ class TrackForm(forms.ModelForm):
                 continue
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} {css_class}".strip()
+
+    def _default_artist_name(self) -> str:
+        user = self.user
+        if not user or not getattr(user, "is_authenticated", False):
+            return ""
+
+        profile = getattr(user, "userprofile", None)
+        display_name = getattr(profile, "display_name", "")
+        if display_name:
+            return str(display_name).strip()
+        return str(getattr(user, "username", "")).strip()
 
     def clean_title(self):
         return (self.cleaned_data.get("title") or "").strip()
@@ -162,6 +179,11 @@ class TrackForm(forms.ModelForm):
             if not artist_name and upload_metadata.get("artist_name"):
                 artist_name = upload_metadata["artist_name"].strip()
                 cleaned_data["artist_name"] = artist_name
+
+            if not artist_name:
+                artist_name = self._default_artist_name()
+                if artist_name:
+                    cleaned_data["artist_name"] = artist_name
 
             if not cleaned_data.get("duration_seconds") and upload_metadata.get("duration_seconds"):
                 cleaned_data["duration_seconds"] = upload_metadata["duration_seconds"]

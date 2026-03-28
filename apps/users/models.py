@@ -28,7 +28,7 @@ class UserProfile(models.Model):
     def avatar_url(self) -> str:
         if self.avatar:
             return self.avatar.url
-        return f"{settings.STATIC_URL}img/placeholders/avatar.png"
+        return f"{settings.STATIC_URL}img/placeholders/avatar.svg"
 
     @property
     def effective_name(self) -> str:
