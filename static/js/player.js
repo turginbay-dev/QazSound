@@ -1,6 +1,6 @@
 (function () {
-  const STORAGE_KEY = "qazsound.player.state.v2";
-  const HISTORY_KEY = "qazsound.player.history.v2";
+  const STORAGE_KEY = "qazsound.player.state.v3";
+  const HISTORY_KEY = "qazsound.player.history.v3";
   const SOURCE_UPLOAD = "UPLOAD";
   const SOURCE_YOUTUBE = "YOUTUBE";
   const SAVE_THROTTLE_MS = 500;
@@ -57,6 +57,23 @@
     }
   }
 
+  function isLocalDevHost() {
+    return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  }
+
+  function isStaleLocalMediaUrl(url) {
+    if (!url || isLocalDevHost()) {
+      return false;
+    }
+
+    try {
+      const resolved = new URL(url, window.location.origin);
+      return resolved.origin === window.location.origin && resolved.pathname.startsWith("/media/");
+    } catch (error) {
+      return String(url || "").trim().startsWith("/media/");
+    }
+  }
+
   function parseJson(value) {
     try {
       return JSON.parse(value);
@@ -77,13 +94,22 @@
     const trackId = String(raw.trackId || raw.track_id || "").trim();
     const sourceRaw = String(raw.sourceType || raw.source_type || SOURCE_UPLOAD).toUpperCase();
     const sourceType = sourceRaw === SOURCE_YOUTUBE ? SOURCE_YOUTUBE : SOURCE_UPLOAD;
+    let coverUrl = String(raw.coverUrl || raw.cover_url || placeholderCover || "").trim() || placeholderCover;
+    let audioUrl = String(raw.audioUrl || raw.audio_url || "").trim();
+
+    if (isStaleLocalMediaUrl(coverUrl)) {
+      coverUrl = placeholderCover;
+    }
+    if (isStaleLocalMediaUrl(audioUrl)) {
+      audioUrl = "";
+    }
 
     return {
       trackId,
       title: String(raw.title || "Untitled track").trim() || "Untitled track",
       artist: String(raw.artist || "Unknown artist").trim() || "Unknown artist",
-      coverUrl: String(raw.coverUrl || raw.cover_url || placeholderCover || "").trim() || placeholderCover,
-      audioUrl: String(raw.audioUrl || raw.audio_url || "").trim(),
+      coverUrl,
+      audioUrl,
       sourceType,
       trackUrl: String(raw.trackUrl || raw.track_url || (trackId ? `/tracks/${trackId}/` : "/")).trim() || "/",
       isLiked: asBoolean(raw.isLiked ?? raw.is_liked ?? raw.liked ?? false),
@@ -164,7 +190,10 @@
     if (!parsed) return null;
 
     const track = normalizeTrack(parsed);
-    if (!track.trackId) return null;
+    if (!track.trackId || (track.sourceType === SOURCE_UPLOAD && !track.audioUrl)) {
+      window.localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
 
     return {
       ...track,
@@ -181,7 +210,9 @@
     const parsed = parseJson(raw);
     if (!parsed || !Array.isArray(parsed.items)) return;
 
-    const items = parsed.items.map((item) => normalizeTrack(item)).filter((item) => item.trackId);
+    const items = parsed.items
+      .map((item) => normalizeTrack(item))
+      .filter((item) => item.trackId && (item.sourceType === SOURCE_YOUTUBE || Boolean(item.audioUrl)));
     if (!items.length) return;
 
     const parsedIndex = Number.parseInt(parsed.index, 10);

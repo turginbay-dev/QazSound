@@ -87,6 +87,7 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 DATABASE_URL = _env_str("DATABASE_URL")
 FIREBASE_STORAGE_BUCKET = _env_str("FIREBASE_STORAGE_BUCKET")
+ENABLE_STORAGE_STARTUP_LOGS = _env_bool("ENABLE_STORAGE_STARTUP_LOGS", default=not DEBUG)
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
@@ -229,6 +230,16 @@ if FIREBASE_STORAGE_BUCKET:
         "OPTIONS": {key: value for key, value in firebase_storage_options.items() if value is not None},
     }
     SERVE_LOCAL_MEDIA = False
+
+if ENABLE_STORAGE_STARTUP_LOGS:
+    print(
+        "[QazSound storage] "
+        f"default_backend={STORAGES['default']['BACKEND']} "
+        f"firebase_bucket={FIREBASE_STORAGE_BUCKET or '-'} "
+        f"serve_local_media={SERVE_LOCAL_MEDIA} "
+        f"debug={DEBUG}"
+    )
+
 ENABLE_YTDLP_YOUTUBE_STREAM = _env_bool("ENABLE_YTDLP_YOUTUBE_STREAM", default=True)
 YTDLP_STREAM_FORMAT = os.getenv("YTDLP_STREAM_FORMAT", "bestaudio/best")
 YTDLP_REQUEST_TIMEOUT_SECONDS = _env_int("YTDLP_REQUEST_TIMEOUT_SECONDS", default=12)
