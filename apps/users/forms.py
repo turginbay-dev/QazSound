@@ -18,6 +18,26 @@ class RegisterForm(UserCreationForm):
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} form-input".strip()
 
+        self.fields["username"].widget.attrs.update(
+            {
+                "autocomplete": "username",
+                "autocapitalize": "none",
+                "autocorrect": "off",
+                "spellcheck": "false",
+            }
+        )
+        self.fields["email"].widget.attrs.update(
+            {
+                "autocomplete": "email",
+                "inputmode": "email",
+                "autocapitalize": "none",
+                "autocorrect": "off",
+                "spellcheck": "false",
+            }
+        )
+        self.fields["password1"].widget.attrs["autocomplete"] = "new-password"
+        self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
+
     def clean_username(self):
         username = (self.cleaned_data.get("username") or "").strip()
         if " " in username:
@@ -31,6 +51,16 @@ class LoginForm(AuthenticationForm):
         for field in self.fields.values():
             existing = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing} form-input".strip()
+
+        self.fields["username"].widget.attrs.update(
+            {
+                "autocomplete": "username",
+                "autocapitalize": "none",
+                "autocorrect": "off",
+                "spellcheck": "false",
+            }
+        )
+        self.fields["password"].widget.attrs["autocomplete"] = "current-password"
 
 
 class ProfileSettingsForm(forms.ModelForm):
@@ -62,6 +92,21 @@ class ProfileSettingsForm(forms.ModelForm):
                 widget.attrs["class"] = f"{existing} form-input".strip()
             else:
                 widget.attrs["class"] = f"{existing} form-input".strip()
+
+        self.fields["username"].widget.attrs.update(
+            {
+                "autocomplete": "username",
+                "autocapitalize": "none",
+                "autocorrect": "off",
+                "spellcheck": "false",
+            }
+        )
+        self.fields["display_name"].widget.attrs.update(
+            {
+                "autocomplete": "nickname",
+                "spellcheck": "false",
+            }
+        )
 
     def clean_username(self):
         username = (self.cleaned_data.get("username") or "").strip()
