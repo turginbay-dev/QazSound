@@ -113,6 +113,7 @@ INSTALLED_APPS = [
 ]
 
 if FIREBASE_STORAGE_BUCKET:
+    raise ImproperlyConfigured(f"BUCKET_SEEN::{FIREBASE_STORAGE_BUCKET}")
     if importlib.util.find_spec("storages") is None:
         raise ImproperlyConfigured(
             "FIREBASE_STORAGE_BUCKET is set, but django-storages is not installed. "
