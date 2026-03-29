@@ -56,9 +56,23 @@ def _env_str(name: str, default: str = "") -> str:
     return value.strip()
 
 
+def _env_choice(*names: str, default: str = "") -> tuple[str, str | None]:
+    for name in names:
+        value = _env_str(name)
+        if value:
+            return value, name
+    return default, None
+
+
 def _build_firebase_credentials(base_dir: Path):
-    credentials_json = _env_str("FIREBASE_CREDENTIALS_JSON")
-    credentials_path = _env_str("FIREBASE_CREDENTIALS_PATH")
+    credentials_json, _ = _env_choice(
+        "FIREBASE_CREDENTIALS_JSON",
+        "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+    )
+    credentials_path, _ = _env_choice(
+        "FIREBASE_CREDENTIALS_PATH",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+    )
 
     if not credentials_json and not credentials_path:
         return None
@@ -89,7 +103,20 @@ DEBUG = _env_bool("DEBUG", default=True)
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if host.strip()]
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 DATABASE_URL = _env_str("DATABASE_URL")
-FIREBASE_STORAGE_BUCKET = _env_str("FIREBASE_STORAGE_BUCKET")
+FIREBASE_STORAGE_BUCKET, FIREBASE_STORAGE_BUCKET_SOURCE = _env_choice(
+    "FIREBASE_STORAGE_BUCKET",
+    "GS_BUCKET_NAME",
+)
+FIREBASE_PROJECT_ID, FIREBASE_PROJECT_ID_SOURCE = _env_choice(
+    "FIREBASE_PROJECT_ID",
+    "GOOGLE_CLOUD_PROJECT",
+    "GCLOUD_PROJECT",
+    "GCP_PROJECT",
+)
+FIREBASE_CREDENTIALS_SOURCE = (
+    _env_choice("FIREBASE_CREDENTIALS_JSON", "GOOGLE_APPLICATION_CREDENTIALS_JSON")[1]
+    or _env_choice("FIREBASE_CREDENTIALS_PATH", "GOOGLE_APPLICATION_CREDENTIALS")[1]
+)
 ENABLE_STORAGE_STARTUP_LOGS = _env_bool("ENABLE_STORAGE_STARTUP_LOGS", default=not DEBUG)
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -216,7 +243,7 @@ if FIREBASE_STORAGE_BUCKET:
     firebase_media_location = _env_str("FIREBASE_MEDIA_LOCATION", "media").strip("/")
     firebase_storage_options = {
         "bucket_name": FIREBASE_STORAGE_BUCKET,
-        "project_id": _env_str("FIREBASE_PROJECT_ID") or None,
+        "project_id": FIREBASE_PROJECT_ID or None,
         "credentials": _build_firebase_credentials(BASE_DIR),
         "location": firebase_media_location,
         "default_acl": None,
@@ -239,9 +266,16 @@ if ENABLE_STORAGE_STARTUP_LOGS:
         "[QazSound storage] "
         f"default_backend={STORAGES['default']['BACKEND']} "
         f"firebase_bucket={FIREBASE_STORAGE_BUCKET or '-'} "
+        f"bucket_env={FIREBASE_STORAGE_BUCKET_SOURCE or '-'} "
+        f"project_env={FIREBASE_PROJECT_ID_SOURCE or '-'} "
+        f"credentials_env={FIREBASE_CREDENTIALS_SOURCE or '-'} "
         f"serve_local_media={SERVE_LOCAL_MEDIA} "
         f"debug={DEBUG}"
     )
+    if not DEBUG and SERVE_LOCAL_MEDIA:
+        print(
+            "[QazSound storage] WARNING local FileSystemStorage is active because no Firebase/GCS bucket env was found."
+        )
 
 ENABLE_YTDLP_YOUTUBE_STREAM = _env_bool("ENABLE_YTDLP_YOUTUBE_STREAM", default=True)
 YTDLP_STREAM_FORMAT = os.getenv("YTDLP_STREAM_FORMAT", "bestaudio/best")
