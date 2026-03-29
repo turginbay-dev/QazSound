@@ -4,6 +4,7 @@ import json
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -24,7 +25,8 @@ except ImportError:  # pragma: no cover - optional until Firebase/GCS media stor
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / ".env")
+if not os.getenv("RENDER"):
+    load_dotenv(BASE_DIR / ".env")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -103,6 +105,13 @@ DEBUG = _env_bool("DEBUG", default=True)
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if host.strip()]
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 DATABASE_URL = _env_str("DATABASE_URL")
+if os.getenv("RENDER") and DATABASE_URL:
+    database_host = urlparse(DATABASE_URL).hostname
+    if database_host in {"localhost", "127.0.0.1", "::1"}:
+        raise ImproperlyConfigured(
+            "DATABASE_URL points to localhost while running on Render. "
+            "Set DATABASE_URL to your Render Postgres connection string."
+        )
 FIREBASE_STORAGE_BUCKET, FIREBASE_STORAGE_BUCKET_SOURCE = _env_choice(
     "FIREBASE_STORAGE_BUCKET",
     "GS_BUCKET_NAME",
