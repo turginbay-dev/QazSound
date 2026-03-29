@@ -113,7 +113,6 @@ INSTALLED_APPS = [
 ]
 
 if FIREBASE_STORAGE_BUCKET:
-    raise ImproperlyConfigured(f"BUCKET_SEEN::{FIREBASE_STORAGE_BUCKET}")
     if importlib.util.find_spec("storages") is None:
         raise ImproperlyConfigured(
             "FIREBASE_STORAGE_BUCKET is set, but django-storages is not installed. "
@@ -191,7 +190,6 @@ LANGUAGES = [
     ("kk", "Қазақша"),
     ("ru", "Русский"),
 ]
-raise Exception(f"BUCKET_RUNTIME={os.getenv('FIREBASE_STORAGE_BUCKET')!r}")
 LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "UTC"
 USE_I18N = True
