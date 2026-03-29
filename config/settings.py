@@ -109,6 +109,7 @@ FIREBASE_STORAGE_BUCKET, FIREBASE_STORAGE_BUCKET_SOURCE = _env_choice(
 )
 FIREBASE_PROJECT_ID, FIREBASE_PROJECT_ID_SOURCE = _env_choice(
     "FIREBASE_PROJECT_ID",
+    "GS_PROJECT_ID",
     "GOOGLE_CLOUD_PROJECT",
     "GCLOUD_PROJECT",
     "GCP_PROJECT",
@@ -275,6 +276,10 @@ if ENABLE_STORAGE_STARTUP_LOGS:
     if not DEBUG and SERVE_LOCAL_MEDIA:
         print(
             "[QazSound storage] WARNING local FileSystemStorage is active because no Firebase/GCS bucket env was found."
+        )
+    if os.getenv("RENDER") and FIREBASE_STORAGE_BUCKET and not FIREBASE_CREDENTIALS_SOURCE:
+        print(
+            "[QazSound storage] WARNING Render is using a GCS bucket but no explicit credentials env/secret file was detected."
         )
 
 ENABLE_YTDLP_YOUTUBE_STREAM = _env_bool("ENABLE_YTDLP_YOUTUBE_STREAM", default=True)
